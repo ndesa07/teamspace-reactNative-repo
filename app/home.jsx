@@ -180,14 +180,15 @@ export default function Home() {
               }}>
                 <View style={{ marginBottom: 12 }}>
                 
-                    <Text style={{ color: "white", fontWeight: "700" }}>
+                    <Text style={{ color: "white", fontWeight: "700", fontSize: "20" }}>
                         {a.titleText ?? a.title}
                     </Text>
-                
-                <Text style={{ color: "white" }}>
-                    {a.bodyText ?? a.body}
-                </Text>
-                <View style={{ height: 4, backgroundColor: "#fff", opacity: 0.6, marginTop: 8,width: "100%"}} />
+                    <View style = {{borderWidth:1, borderColor: "white", marginBottom: 10}} />
+                    <Text style={{ color: "white" }}>
+                      {(a.bodyText ?? a.body ?? '').slice(0, 60)}
+                      {(a.bodyText ?? a.body ?? '').length > 60 ? '…' : ''}
+                    </Text>
+                <View style={{ height: 9, backgroundColor: "#fff", opacity: 0.6, marginTop: 8,width: "100%"}} />
                 </View>
             </Pressable>
           ))
