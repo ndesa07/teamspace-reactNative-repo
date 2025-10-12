@@ -1,41 +1,62 @@
 import React, { useEffect, useState } from "react";
 import { Modal, View, Text, Pressable, StyleSheet, ScrollView, TextInput, Switch, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-// Accepts either ISO or your YYYY-M-D and returns a nice label
-function formatWhen(dateVal) {
-  if (!dateVal) return "";
-  const maybeDate = new Date(dateVal);
-  return String(dateVal); // your 'YYYY-M-D'
+function pad(n) { return String(n).padStart(2, "0"); }
+function toAmPm(h, m) {
+  const hour = Number(h);
+  const min = pad(m);
+  const am = hour < 12;
+  const hr12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hr12}:${min} ${am ? "am" : "pm"}`;
 }
-
+function ymd(d) {
+  if (typeof d === "string") return d;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function parseTimeToDate(baseDateStr, timeStr) {
+  const base = new Date(baseDateStr || ymd(new Date()));
+  const m = timeStr?.trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (!m) return base;
+  let [_, hh, mm, ap] = m;
+  let H = Number(hh) % 12;
+  if (/pm/i.test(ap)) H += 12;
+  base.setHours(H, Number(mm), 0, 0);
+  return base;
+}
 function isYmd(dateStr) {
-  return /^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr.trim());
+  return /^\d{4}-\d{1,2}-\d{1,2}$/.test(String(dateStr ?? "").trim());
 }
 
 export default function EventDetailModal({
   visible,
   onClose,
-  event,                 // doc with $id, EventName, EventBody, Active, Club, Name, Date, $createdAt
+  event,
   canEdit = false,
   canDelete = false,
-  onUpdate,             // async ({ EventName, EventBody, Active, Date }) => void
+  onUpdate,
   updating = false,
-  updateDelete,         // async () => void
+  updateDelete,
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-
   const initialName   = event?.EventName ?? event?.Title ?? "";
   const initialBody   = event?.EventBody ?? event?.Body ?? "";
   const initialActive = (event?.Active ?? false) === true;
-  const initialDate   = event?.Date ?? ""; // you’re storing 'YYYY-M-D'
+  const initialDate   = event?.Date ?? "";
+  const initialTime   = event?.Time ?? "";
 
-  const [name, setName]     = useState(initialName);
-  const [body, setBody]     = useState(initialBody);
-  const [active, setActive] = useState(initialActive);
-  const [dateStr, setDateStr] = useState(initialDate); // edit as text in YYYY-M-D
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName]           = useState(initialName);
+  const [body, setBody]           = useState(initialBody);
+  const [active, setActive]       = useState(initialActive);
+  const [dateStr, setDateStr]     = useState(initialDate);
+  const [timeStr, setTimeStr]     = useState(initialTime);
+  const [pickerDate, setPickerDate] = useState(() => {
+    if (initialDate && initialTime) return parseTimeToDate(initialDate, initialTime);
+    if (initialDate) return new Date(initialDate);
+    return new Date();
+  });
 
-  // Reset when opened or the record changes
   useEffect(() => {
     if (visible) {
       setIsEditing(false);
@@ -43,26 +64,43 @@ export default function EventDetailModal({
       setBody(initialBody);
       setActive(initialActive);
       setDateStr(initialDate);
+      setTimeStr(initialTime);
+      setPickerDate(() => {
+        if (initialDate && initialTime) return parseTimeToDate(initialDate, initialTime);
+        if (initialDate) return new Date(initialDate);
+        return new Date();
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, event?.$id]);
 
   if (!visible || !event) return null;
 
   const club    = event.Club ?? "";
   const author  = event.Name ?? event.createdBy ?? "Unknown";
-  const created = event.$createdAt ?? event.createdAt ?? null;
-  const createdLabel = created ? new Date(created).toLocaleString() : "";
 
-  const canSubmit =
-    name.trim().length > 0 &&
-    isYmd(dateStr); // require valid YYYY-M-D; body optional
+  const canSubmit = name.trim().length > 0 && isYmd(dateStr);
 
   const changed =
     name.trim() !== initialName.trim() ||
     body.trim() !== initialBody.trim() ||
     Boolean(active) !== Boolean(initialActive) ||
-    dateStr.trim() !== (initialDate ?? "").trim();
+    String(dateStr ?? "").trim() !== String(initialDate ?? "").trim() ||
+    String(timeStr ?? "").trim() !== String(initialTime ?? "").trim();
+
+  const handlePickDate = (_e, selected) => {
+    const d = selected || pickerDate;
+    setPickerDate(d);
+    setDateStr(ymd(d));
+    const hh = d.getHours();
+    const mm = d.getMinutes();
+    setTimeStr(toAmPm(hh, mm));
+  };
+
+  const handleTimeChange = (txt) => {
+    setTimeStr(txt);
+    const merged = parseTimeToDate(dateStr || ymd(new Date()), txt);
+    setPickerDate(merged);
+  };
 
   const handleSave = async () => {
     if (!onUpdate) return;
@@ -70,7 +108,8 @@ export default function EventDetailModal({
       EventName: name.trim(),
       EventBody: body.trim(),
       Active: active,
-      Date: dateStr.trim(), // keep your YYYY-M-D format
+      Date: String(dateStr).trim(),
+      Time: String(timeStr || "").trim(),
     });
     setIsEditing(false);
   };
@@ -80,10 +119,7 @@ export default function EventDetailModal({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.backdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-
           <View style={styles.card}>
-
-            {/* Title + Active badge / editor */}
             <View style={styles.titleRow}>
               {isEditing ? (
                 <TextInput
@@ -96,27 +132,35 @@ export default function EventDetailModal({
               ) : (
                 <Text style={styles.title}>{initialName || "(Untitled event)"}</Text>
               )}
-
               <View style={[styles.badge, initialActive ? styles.badgeActive : styles.badgeInactive]}>
                 <Text style={styles.badgeText}>{initialActive ? "Active" : "Inactive"}</Text>
               </View>
             </View>
 
-            {/* Meta row */}
             <View style={styles.metaRow}>
-              {club ? <Text style={styles.metaText}>{club}</Text> : null}
-              {(club && (event.Date || createdLabel)) ? <Text style={styles.metaDot}>•</Text> : null}
-             {event.Date ? <Text style={styles.metaText}>{formatWhen(event.Date)}</Text> : null}
+              <Text style = {styles.switchLabel}>Time:</Text>
+              {event.Time ? <Text style={[{fontSize:17}]}>{`${String(event.Time)}`}</Text> : null}
              
-              <Text style={styles.metaDot}>•</Text>
-              <Text style={styles.metaText}>by {author}</Text>
             </View>
 
             <View style={styles.sectionDivider} />
 
-            {/* Edit-only: Active + Date */}
-            {isEditing && (
-              <>
+            {isEditing ? (
+              <ScrollView
+                style={styles.editScroll}
+                contentContainerStyle={styles.editScrollContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.bodyBox}>
+                  <TextInput
+                    value={body}
+                    onChangeText={setBody}
+                    multiline
+                    placeholder="Add event details…"
+                    placeholderTextColor="#9CA3AF"
+                    style={styles.bodyInput}
+                  />
+                </View>
                 <View style={styles.switchRow}>
                   <Text style={styles.switchLabel}>Active</Text>
                   <Switch
@@ -127,33 +171,17 @@ export default function EventDetailModal({
                   />
                 </View>
 
-                <View style={styles.inputRow}>
+                <View style={{ marginBottom: 8 }}>
                   <Text style={styles.switchLabel}>Date</Text>
-                  <TextInput
-                    value={dateStr}
-                    onChangeText={setDateStr}
-                    placeholder="YYYY-M-D"
-                    placeholderTextColor="#9CA3AF"
-                    style={styles.dateInput}
-                    keyboardType={Platform.OS === "ios" ? "numbers-and-punctuation" : "numeric"}
-                    autoCapitalize="none"
+                  <DateTimePicker
+                    mode="datetime"
+                    value={pickerDate}
+                    onChange={handlePickDate}
+                    display={Platform.OS === "ios" ? "inline" : "calendar"}
                   />
+                  <Text style={{ marginTop: 6, color: "#374151" }}>{dateStr}</Text>
                 </View>
-              </>
-            )}
-
-            {/* Body */}
-            {isEditing ? (
-              <View style={styles.bodyBox}>
-                <TextInput
-                  value={body}
-                  onChangeText={setBody}
-                  multiline
-                  placeholder="Add event details…"
-                  placeholderTextColor="#9CA3AF"
-                  style={styles.bodyInput}
-                />
-              </View>
+              </ScrollView>
             ) : (
               <View style={styles.bodyBox}>
                 <ScrollView style={styles.bodyScroll} contentContainerStyle={{ paddingBottom: 8 }}>
@@ -162,7 +190,6 @@ export default function EventDetailModal({
               </View>
             )}
 
-            {/* Actions */}
             <View style={styles.actions}>
               {!isEditing ? (
                 <>
@@ -175,13 +202,10 @@ export default function EventDetailModal({
                       <MaterialIcons name="delete" size={18} color="red" />
                     </Pressable>
                   )}
-
                   <View style={{ flex: 1 }} />
-
                   <Pressable onPress={onClose} style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.pressed]}>
                     <Text style={styles.btnPrimaryText}>Close</Text>
                   </Pressable>
-
                   {canEdit && (
                     <Pressable onPress={() => setIsEditing(true)} style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.pressed]}>
                       <Text style={styles.btnPrimaryText}>Edit</Text>
@@ -197,12 +221,17 @@ export default function EventDetailModal({
                       setBody(initialBody);
                       setActive(initialActive);
                       setDateStr(initialDate);
+                      setTimeStr(initialTime);
+                      setPickerDate(() => {
+                        if (initialDate && initialTime) return parseTimeToDate(initialDate, initialTime);
+                        if (initialDate) return new Date(initialDate);
+                        return new Date();
+                      });
                     }}
                     style={({ pressed }) => [styles.btn, styles.btnGhost, pressed && styles.pressed]}
                   >
                     <Text style={styles.btnGhostText}>Cancel</Text>
                   </Pressable>
-
                   <Pressable
                     disabled={!canSubmit || !changed || updating}
                     onPress={handleSave}
@@ -256,10 +285,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 8, color: "#111827",
   },
 
-  bodyBox: { borderWidth: 1, borderColor: "#0e6367", borderRadius: 12, padding: 12, marginTop: 4, backgroundColor: "#fff" },
+  bodyBox: { borderWidth: 1, borderColor: "#0e6367", borderRadius: 12, padding: 12, marginTop: 4, backgroundColor: "#fff" ,marginBottom: 10},
   bodyScroll: { maxHeight: 320 },
   body: { color: "#111827", lineHeight: 22 },
-  bodyInput: { minHeight: 160, textAlignVertical: "top", color: "#111827" },
+  bodyInput: { minHeight: 120, textAlignVertical: "top", color: "#111827" },
+
+  editScroll: { maxHeight: 360 },
+  editScrollContent: { paddingBottom: 12 },
 
   actions: { marginTop: 12, flexDirection: "row", justifyContent: "flex-end", gap: 8 },
   btn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },

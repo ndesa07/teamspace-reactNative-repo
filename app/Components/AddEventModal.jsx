@@ -20,6 +20,14 @@ function ymd(d) {
   if (typeof d === "string") return d; // assume already YYYY-MM-DD
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+function time12(d) {
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "pm" : "am";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${pad(h)}:${pad(m)} ${ampm}`;
+}
 
 export default function EventModal({
   visible,
@@ -37,6 +45,7 @@ export default function EventModal({
   const [active, setActive] = useState(initialActive);
   const [pickerDate, setPickerDate] = useState(new Date());
   const [dateStr, setDateStr] = useState(ymd(new Date()));
+  const [timeStr, setTimeStr] = useState(time12(new Date()));
 
   useEffect(() => {
     if (visible) {
@@ -46,6 +55,7 @@ export default function EventModal({
       const now = new Date();
       setPickerDate(now);
       setDateStr(ymd(now));
+      setTimeStr(time12(now));
     }
   }, [visible, initialEventName, initialBody, initialActive]);
 
@@ -53,8 +63,9 @@ export default function EventModal({
     const d = selected || pickerDate;
     setPickerDate(d);
     setDateStr(ymd(d)); // keep as "YYYY-MM-DD"
+    setTimeStr(time12(d));
   };
-
+  
   const canSubmit = true; // never block submit; only disable when submitting
 
   return (
@@ -97,7 +108,7 @@ export default function EventModal({
               <View style={{ marginTop: 8, marginBottom: 6 }}>
                 <Text style={styles.switchLabel}>Date</Text>
                 <DateTimePicker
-                  mode="date"
+                  mode="datetime"
                   value={pickerDate}
                   onChange={handlePickDate}
                   display= {"inline"}
@@ -131,7 +142,8 @@ export default function EventModal({
                     onSubmit({
                       EventName: String(eventName).trim(),
                       EventBody: String(body).trim(),
-                      Date: dateStr,      // "YYYY-MM-DD"
+                      Date: dateStr, 
+                      Time: timeStr,    
                       Active: active,
                     })
                   }

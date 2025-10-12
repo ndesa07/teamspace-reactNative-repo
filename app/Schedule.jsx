@@ -10,7 +10,12 @@ import { Query } from "react-native-appwrite";
 import { MaterialIcons } from "@expo/vector-icons";
 import AddEventModal from './Components/AddEventModal';
 import EventDetailModal from './Components/EventModal';
+import { Animated } from 'react-native';
 import { runOnJS } from 'react-native-reanimated';
+
+const WEEK_H = 110;     // tune for your header/week row height
+const MONTH_H = 380;    // tune for full month
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
 const ymd = (d) => {
   if (typeof d === 'string') {
@@ -48,6 +53,11 @@ function getMonthName(number)
   const m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return m[number] ?? "";
 }
+function getDayOfWeek(num)
+{
+  const dayOfWeek= ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+  return dayOfWeek[num]
+}
 export default function Schedule()
 {
   const calRef = useRef(null);
@@ -66,6 +76,13 @@ export default function Schedule()
   const [addEventModal, setAddEventModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [mode, setMode] = useState('week') // whatever you use
+
+  const calHeight = useRef(new Animated.Value(WEEK_H)).current;
+  const baseHeightRef = useRef(WEEK_H);
+  const [anchorDate, setAnchorDate] = useState(new Date());
+  
+
 
   const isAdmin = typeof role === "string" && role.toLowerCase() === "admin";
   const isCaptain = typeof role === "string" && role.toLowerCase() === "captain";
@@ -74,6 +91,13 @@ export default function Schedule()
     setweekDates(getWeek(date));
     setSelectedDate(ymd(date));
   }, []);
+  const handlePageChange = useCallback((date) => {
+    setAnchorDate(date);
+    setSelectedDate(ymd(date));
+    setweekDates(getWeek(date));
+    loadEvents(ymd(date));
+  }, [loadEvents]);
+  
 
   useEffect(() => {
     if (!clubName || weekDates.length === 0) return;
@@ -124,7 +148,21 @@ export default function Schedule()
     loadEvents(selectedDate);
   }, [loadEvents, selectedDate]);
 
-  const handleSubmit = async ({ EventName, EventBody, Date, Active }) => {
+  const handleDateSelect = useCallback((date) => {
+    const dStr = ymd(date);
+    setAnchorDate(date);
+    setSelectedDate(dStr);
+    setweekDates(getWeek(date));
+    loadEvents(dStr);
+    setCurrentDate(date);
+    calRef.current?.setPage(date);
+    if (mode === 'month') {
+      setMode('week');
+      Animated.spring(calHeight, { toValue: WEEK_H, useNativeDriver: false, bounciness: 0 }).start();
+    }
+  }, [mode, loadEvents]);
+  
+  const handleSubmit = async ({ EventName, EventBody, Date, Active,Time }) => {
     try {
       setSubmitting(true);
       if (!clubName?.trim()) {
@@ -147,6 +185,8 @@ export default function Schedule()
           Club: clubName.trim(),
           Name: authorName,
           Date: String(Date).trim(),
+          Time: String(Time).trim(),
+
         }
       );
 
@@ -170,6 +210,21 @@ export default function Schedule()
     dayLabelFontSize: 14,
     dayFontSize: 18,
   }), []);
+  const onKnobDragStart = () => {
+    baseHeightRef.current = mode === 'month' ? MONTH_H : WEEK_H;
+  };
+
+  const onKnobDrag = (dy) => {
+    calHeight.stopAnimation();
+    calHeight.setValue(clamp(baseHeightRef.current + dy, WEEK_H, MONTH_H));
+  };
+
+  const onKnobRelease = (dy) => {
+    const nextIsMonth = baseHeightRef.current + dy > (WEEK_H + MONTH_H) / 2;
+    const target = nextIsMonth ? MONTH_H : WEEK_H;
+    Animated.spring(calHeight, { toValue: target, useNativeDriver: false, bounciness: 0 }).start();
+    setMode(nextIsMonth ? 'month' : 'week');
+  };
 
   return (
     <Layout
@@ -179,16 +234,31 @@ export default function Schedule()
         router.push({ pathname: '/Schedule', params: { clubName,role,name } })}
     >
       <View style={styles.hideOverflow}>
+      <Animated.View style={{ height: calHeight, overflow: 'hidden' }}>
         <Calendar
-          pageInterval="week"
+          pageInterval={mode}
           weekStartsOn={1}
+          ref={calRef}
           currentDate={currentDate}
-          onPageChange={handleAnchor}
+          onPageChange={handlePageChange}
+          onDateSelect={handleDateSelect}
           theme={calendarTheme}
+          
         />
+        </Animated.View>
 
         <View style={[{marginTop: 5}, {marginBottom: 5}]}>
-          <CalendarKnob />
+          <CalendarKnob
+          isExpanded={mode === 'month'}
+          onToggle={(expanded) => {
+            const target = expanded ? MONTH_H : WEEK_H;
+            Animated.spring(calHeight, { toValue: target, useNativeDriver: false, bounciness: 0 }).start();
+            setMode(expanded ? 'month' : 'week');
+          }}
+          onDragStart={onKnobDragStart}
+          onDrag={onKnobDrag}
+          onRelease={onKnobRelease}
+      />
         </View>
       </View>
 
@@ -197,6 +267,7 @@ export default function Schedule()
           <Pressable
             onPress={() => {
               const today = new Date();
+              calRef.current?.setPage?.(today, { animated: true });
               setCurrentDate(today);
               setSelectedDate(ymd(today));
               setweekDates(getWeek(today));
@@ -226,7 +297,7 @@ export default function Schedule()
             return (
               <View style={styles.inEventRow} key={d.toISOString()}>
                 <Text style={styles.eventList}>
-                  {getMonthName(d.getMonth())} {' '}{d.getDate()}
+                  {getMonthName(d.getMonth())} {' '}{d.getDate()} {getDayOfWeek(d.getDay())}
                 </Text>
 
                 {todays.length === 0 ? (
@@ -271,7 +342,7 @@ export default function Schedule()
         canEdit={isAdmin || isCaptain}
         canDelete={isAdmin || isCaptain}
         updating={updatingDetail}
-        onUpdate={async ({ EventName, EventBody, Active, Date }) => {
+        onUpdate={async ({ EventName, EventBody, Active, Date,Time }) => {
           try {
             setUpdatingDetail(true);
             await tablesDb.updateRow(
@@ -283,6 +354,7 @@ export default function Schedule()
                 EventBody: String(EventBody).trim(),
                 Active: Active,
                 Date: String(Date).trim(),
+                Time: String(Time).trim(),
               }
             );
             await loadEvents(selectedEvent.Date);
@@ -326,7 +398,7 @@ const styles = StyleSheet.create({
   eventList: {
     padding: 10,
     flex: 1,
-    fontSize: 30,
+    fontSize: 27.5,
     color: 'white',
     fontWeight: '400',
   },
