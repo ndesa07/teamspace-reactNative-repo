@@ -1,29 +1,30 @@
 // styles/common.js
 import { StyleSheet } from "react-native";
 
-
-
 export const colors = {
-  background: "#0e6367",         // app background
-  surface: "#ffffff",            // cards, inputs
-  surfaceAlt: "#f7fafc",         // optional lighter surface
-  border: "#e5e7eb",
-  onBackground: "#ffffff",       // text on background
-  onSurface: "#111827",          // text on surface
-  muted: "#6b7280",
-  dividerOnBg: "rgba(255,255,255,0.35)",
-  dividerOnSurface: "#e5e7eb",
+  background: "#0b1020",
+  surface: "#eaf6ff",
+  surfaceAlt: "#0b2336",
+  border: "#234a7a",
+  onBackground: "#eaf6ff",
+  onSurface: "#d9ecff",
+  muted: "#7db4ff",
+  dividerOnBg: "rgba(234,246,255,0.16)",
+  dividerOnSurface: "rgba(255,255,255,0.08)",
 };
-export default {}
+
+export default {};
+
 export const common = StyleSheet.create({
-  // Wrap your screen root with this so every page has the same bg
   screen: { 
     flex: 1, 
     backgroundColor: colors.background,
   },
+  mainScreen:{
+    color: colors.background,
+    flex: 1,
+  },
 
- 
-  // Layout container (no bg so the screen bg shows through)
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -43,12 +44,13 @@ export const common = StyleSheet.create({
     backgroundColor: colors.surface,
     padding: 12,
   },
+
   scrollView: {
     backgroundColor: colors.background,
-    borderWidth: 1,       
-    borderColor: colors.surface, 
-    borderRadius: 8,      
-    margin: 12,           
+    borderWidth: 1,
+    borderColor: colors.border,      // updated
+    borderRadius: 8,
+    margin: 12,
   },
 
   title: { 
@@ -60,11 +62,10 @@ export const common = StyleSheet.create({
   subtitle: { 
     fontSize: 25, 
     fontWeight: "600", 
-    color: colors.onBackground,      // readable on teal
+    color: colors.onBackground,
     opacity: 0.9,
   },
 
-  // Use this when the divider sits on the teal background
   divider: {
     height: 1,
     backgroundColor: colors.dividerOnBg,
@@ -73,13 +74,12 @@ export const common = StyleSheet.create({
     width: "100%",
   },
 
-  // Button wrapper for card-like buttons
   buttonCard: {
     flex: 1,
     padding: 8,
     marginHorizontal: 1,
     borderRadius: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt, // updated
     borderWidth: 1,
     borderColor: colors.border,
     shadowColor: "#000",
@@ -87,8 +87,8 @@ export const common = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
-
   },
+
   bottomSection: {
     alignItems: "center",
     paddingBottom: 20,
@@ -100,14 +100,14 @@ export const common = StyleSheet.create({
     marginHorizontal: 20,
   },
 
-  // Labels shown on the teal background (e.g., your login labels)
   label: {
     width: "100%",
     alignSelf: "center",
     marginBottom: 6,
     fontWeight: "600",
-    color: colors.onBackground,      // white on teal
+    color: colors.onBackground,
   },
+
   hero: {
     width: "100%",
     height: 180,
@@ -119,6 +119,29 @@ export const common = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
   },
-
   labelSpacer: { marginTop: 18 },
+
+  buttonNav: {
+    flexDirection: "row",
+    borderWidth: 2,
+    padding: 5,
+    borderRadius: 10,
+    flex: 1,
+    textAlign: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+    backgroundColor: colors.surfaceAlt
+  },
+  pushButtonNav: {
+    flexDirection: "row",
+    borderWidth: 2,
+    padding: 5,
+    borderRadius: 10,
+    textAlign: "center",
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
+    backgroundColor: colors.surfaceAlt
+  },
 });

@@ -11,15 +11,16 @@ import {
 } from "react-native";
 import { tablesDb } from "../../lib/appwrite";
 import { DB_ID, Table_ID } from "../../lib/constants";
+import { colors } from "../styles/common";
 
 // If you have a shared color system, swap these with your `colors`
 const PALETTE = {
-  bg: "#f5f5f5",
-  border: "#d9d9d9",
-  text: "#111",
-  hint: "#777",
+  bg: colors.surfaceAlt,
+  border: colors.border,
+  text: colors.surface,
+  hint: colors.surface,
   error: "#dc2626",
-  overlay: "#fff",
+  overlay:colors.surfaceAlt,
 };
 
 export default function ClubSearchDropdown({

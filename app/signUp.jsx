@@ -155,21 +155,21 @@ export default function SignUp() {
             <View style={common.divider} />
           </View>
           <View style = {[{paddingBottom: "10"}]}> 
-            <Text style = {[{color: "white"},{fontWeight: "40"},{fontSize: "20"}]}>To create a new club select the admin option. </Text>
-            <Text style = {[{color: "white"},{fontWeight: "40"},{fontSize: "20"}]}>To Join a team select the captain or player option. </Text>
+            <Text style = {[{color: colors.surface},{fontWeight: "40"},{fontSize: "20"}]}>To create a new club select the admin option. </Text>
+            <Text style = {[{color: colors.surface},{fontWeight: "40"},{fontSize: "20"}]}>To Join a team select the captain or player option. </Text>
 
           </View>
           <View style={[styles.pickerWrap, { width: "80%" }]}>
             <Picker
               selectedValue={role}
               onValueChange={handleRoleChange}
-              dropdownIconColor={colors.onSurface}
+              dropdownIconColor={colors.surface}
               style={styles.picker}
             >
-              <Picker.Item label="Select role..." value="" />
-              <Picker.Item label="Admin" value="admin" />
-              <Picker.Item label="Captain" value="captain" />
-              <Picker.Item label="Player" value="player" />
+              <Picker.Item label="Select role..." value="" color = {colors.surface} />
+              <Picker.Item label="Admin" value="admin" color = {colors.surface}/>
+              <Picker.Item label="Captain" value="captain" color = {colors.surface}/>
+              <Picker.Item label="Player" value="player"color = {colors.surface} />
             </Picker>
           </View>
         </View>
@@ -198,12 +198,12 @@ export default function SignUp() {
               <Picker
                 selectedValue={role}
                 onValueChange={handleRoleChange}
-                dropdownIconColor={colors.onSurface}
+                dropdownIconColor={colors.surface}
                 style={styles.picker}
               >
-                <Picker.Item label="Admin / Coach" value="admin" />
-                <Picker.Item label="Captain" value="captain" />
-                <Picker.Item label="Player" value="player" />
+                <Picker.Item label="Admin / Coach" value="admin"color = {colors.surface} />
+                <Picker.Item label="Captain" value="captain"color = {colors.surface} />
+                <Picker.Item label="Player" value="player" color = {colors.surface}/>
               </Picker>
             </View>
             
@@ -308,7 +308,7 @@ export default function SignUp() {
                     Keyboard.dismiss();
                     handleRoleChange("");
                   }}
-                  color={colors.onSurface}
+                  color={colors.surface}
                 />
               </View>
               <View style={styles.buttonOutline}>
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
     color: colors.onSurface,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -351,10 +351,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
     overflow: "hidden",
   },
-  picker: { color: colors.onSurface },
+  picker: { color: colors.surfaceAlt },
   error: { color: "#dc2626", marginTop: 4, fontWeight: "600" },
   actionsRow: {
     flexDirection: "row",
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   buttonOutline: {
     flex: 1,
     borderRadius: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     marginHorizontal: 6,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   signInLink: {
     marginTop: 14,
     textAlign: "center",
-    color: colors.onBackground,
+    color: colors.surface,
     opacity: 0.85,
     textDecorationLine: "underline",
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     top: 50,
     left: 0,
     right: 0,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,

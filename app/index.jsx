@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import 'react-native-gesture-handler';
+import 'react-native-reanimated';
 import {
   View,
   Text,
@@ -32,15 +34,19 @@ export default function Login()
     return true;
   }, [email, password]);
 
-  const onSubmit = async () => {
+  const onSubmit = async () => 
+    {
     try 
     {
       setLoading(true);
       await loginUser(email.trim(), password);
       router.replace("/home");
-    } catch (e) {
+    } 
+    catch (e) 
+    {
       Alert.alert("Sign in failed", e?.message || String(e));
-    } finally {
+    } finally 
+    {
       setLoading(false);
     }
   };
@@ -102,7 +108,7 @@ export default function Login()
                   title={loading ? "Signing In..." : "Sign In"}
                   onPress={onSubmit}
                   disabled={!isValid || loading}
-                  color="#0e6367"
+                  color= {colors.surface}
                 />
               </View>
             </View>
@@ -132,8 +138,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
-    backgroundColor: colors.surface,
-    color: colors.onSurface,
+    backgroundColor: colors.surfaceAlt,
+    color: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
@@ -145,7 +151,7 @@ const styles = StyleSheet.create({
   buttonOutline: {
     flex: 1,
     borderRadius: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     marginHorizontal: 6,
@@ -153,7 +159,7 @@ const styles = StyleSheet.create({
   altLink: {
     marginTop: 14,
     textAlign: "center",
-    color: colors.onBackground,
+    color: colors.surface,
     opacity: 0.85,
     textDecorationLine: "underline",
   },

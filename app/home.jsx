@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet, Button,TouchableWithoutFeedback,Keyboard } from "react-native";
 import Layout from "./home_layout";
-import { common } from "./styles/common";
+import { common,colors } from "./styles/common";
 import { account, tablesDb, ID } from "../lib/appwrite";
 import { MaterialIcons } from "@expo/vector-icons";
 import AnnouncementModal from "./Components/AnnouncementModal.jsx";
@@ -153,8 +153,8 @@ export default function Home() {
             <View style={styles.headerActions}>
               
               <View style={styles.actionBtn}>
-                <MaterialIcons name="add" size={18} color="#0e6367" style={styles.actionIcon} />
-                <Button title="Add" color="#0e6367" onPress={() => setShowAddModal(true)} />
+                <MaterialIcons name="add" size={18} color= {colors.surface} style={styles.actionIcon} />
+                <Button title="Add" color={colors.surface} onPress={() => setShowAddModal(true)} />
               </View>
               
             </View>
@@ -164,7 +164,9 @@ export default function Home() {
       onPressSchedule={() =>
         router.push({ pathname: '/Schedule', params: { clubName,role , firstName} })
       }
-      onPressTeams={() => {}}
+      onPressTeams={() => 
+        router.push({ pathname: '/Teams', params: { clubName,role , firstName}})
+      }
       onPressProfile={() => {}}
     >
       <ScrollView style={common.scrollView} contentContainerStyle={{ padding: 16 }}>
@@ -264,11 +266,12 @@ const styles = StyleSheet.create({
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginLeft: 4,
+    borderColor: colors.border,
 
   },
   actionIcon: { marginRight: 6 },

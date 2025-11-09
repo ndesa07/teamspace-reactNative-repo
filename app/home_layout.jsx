@@ -62,13 +62,13 @@ export default function Layout({
           <View style={common.bottomSection}>
             <View style={common.row}>
               <View style={common.buttonCard}>
-                <Button title="Schedule" color="#0e6367" onPress={onPressSchedule} />
+                <Button title="Schedule" color= {colors.surface} onPress={onPressSchedule} />
               </View>
               <View style={common.buttonCard}>
-                <Button title="Teams" color="#0e6367" onPress={() => {onPressTeams}} />
+                <Button title="Teams" color= {colors.surface} onPress={onPressTeams} />
               </View>
               <View style={common.buttonCard}>
-                <Button title="Profile" color="#0e6367" onPress={() => {onPressProfile}} />
+                <Button title="Profile" color= {colors.surface} onPress={() => {onPressProfile}} />
               </View>
             </View>
           </View>

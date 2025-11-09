@@ -1,5 +1,5 @@
 import React, {useState,useCallback ,useEffect,useRef} from 'react';
-import { Text, StyleSheet ,View,Pressable} from 'react-native';
+import { Text, StyleSheet ,View,Pressable,Animated} from 'react-native';
 import Calendar from 'react-native-swipe-calendar';
 import Layout from "./home_layout";
 import CalendarKnob from './calendarKnob';
@@ -9,9 +9,8 @@ import { useLocalSearchParams,router } from 'expo-router';
 import { Query } from "react-native-appwrite"; 
 import { MaterialIcons } from "@expo/vector-icons";
 import AddEventModal from './Components/AddEventModal';
-import EventDetailModal from './Components/EventModal';
-import { Animated } from 'react-native';
-import { runOnJS } from 'react-native-reanimated';
+import EventDetailModal from './Components/EventDetailModal';
+import { colors } from './styles/common';
 
 const WEEK_H = 110;     // tune for your header/week row height
 const MONTH_H = 380;    // tune for full month
@@ -232,6 +231,8 @@ export default function Schedule()
       headerExtras 
       onPressSchedule={() =>
         router.push({ pathname: '/Schedule', params: { clubName,role,name } })}
+      onPressTeams={() =>
+        router.push({ pathname: '/Teams' , params: { clubName,role,name }})}
     >
       <View style={styles.hideOverflow}>
       <Animated.View style={{ height: calHeight, overflow: 'hidden' }}>
@@ -273,18 +274,18 @@ export default function Schedule()
               setweekDates(getWeek(today));
               loadEvents(ymd(today));
             }}
-            style={[{flexDirection: "row", borderWidth: 2, padding: 5, borderRadius: 10, borderColor: "white", backgroundColor: "white"}]}
+            style={[{flexDirection: "row", borderWidth: 2, padding: 5, borderRadius: 10, borderColor: colors.border, backgroundColor: colors.surfaceAlt}]}
           >
-            <MaterialIcons name="today" size={22} color="#0e6367" />
-            <Text style={[{fontSize: 18, color: "#0e6367"}]}>Today</Text>
+            <MaterialIcons name="today" size={22} color= {colors.surface} />
+            <Text style={[{fontSize: 18,  color: colors.surface}]}>Today</Text>
           </Pressable>
 
           <Pressable
             onPress={() => setAddEventModal(true)}
-            style={[{flexDirection: "row", borderWidth: 2, padding: 5, borderRadius: 10, borderColor: "white", backgroundColor: "white"}]}
+            style={[{flexDirection: "row", borderWidth: 2, padding: 5, borderRadius: 10, borderColor: colors.border, backgroundColor: colors.surfaceAlt}]}
           >
-            <MaterialIcons name="add" size={22} color="#0e6367" />
-            <Text style={[{fontSize: 18, color: "#0e6367"}]}>Add Event</Text>
+            <MaterialIcons name="add" size={22} color= {colors.surface} />
+            <Text style={[{fontSize: 18, color: colors.surface}]}>Add Event</Text>
           </Pressable>
         </View>
       )}
@@ -313,7 +314,7 @@ export default function Schedule()
                           idx !== todays.length - 1 && styles.eventBoxSpacer,
                           pressed && styles.eventBoxPressed,
                         ]}
-                        android_ripple={{ color: '#e5e7eb' }}
+                        android_ripple={{ color: colors.surface }}
                       >
                         <Text style={styles.eventTitle}>{evt.EventName ?? 'Event'}</Text>
                       </Pressable>
@@ -383,11 +384,13 @@ export default function Schedule()
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: 
+  {
     alignItems: "center",
     marginTop: 4,
   },
-  list: {
+  list: 
+  {
     flex: 1,
     borderRadius: 10,
     borderColor: "white",
@@ -395,14 +398,16 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginBottom: 5
   },
-  eventList: {
+  eventList: 
+  {
     padding: 10,
     flex: 1,
-    fontSize: 27.5,
+    fontSize: 20,
     color: 'white',
     fontWeight: '400',
   },
-  inEventRow: {
+  inEventRow: 
+  {
     padding: 2,
     flexDirection: 'row',
     alignItems: 'center',
@@ -410,34 +415,45 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderWidth: 2,
   },
-  eventBox: {
-    flex: 1.5,
+  eventBox: 
+  {
+    flex: 1,
     alignSelf: 'center',
     paddingVertical: 6,
     paddingHorizontal: 14,
-    minHeight: 40,
-    minWidth: 200,
-    backgroundColor: 'white',
+    maxHeight: 100,
+    minWidth: 170,
+    backgroundColor: colors.surfaceAlt,
     borderRadius: 10,
     borderWidth: 3,
-    borderColor: '#BDBDBD',
+    borderColor: colors.border,
     justifyContent: 'center',
   },
-  eventBoxSpacer: {
+  eventBoxSpacer: 
+  {
     marginBottom: 2,
   },
-  eventTitle: {
+  eventTitle: 
+  {
     fontSize: 18,
-    color: '#0e6367',
+    color: colors.surface,
     padding: 5,
     textAlign: 'center',
   },
-  eventBoxPressed: { opacity: 0.7 },
-  eventStack: {
+  eventBoxPressed: 
+  { 
+    opacity: 0.7 
+  },
+  eventStack: 
+  {
     alignSelf: 'stretch',
   },
-  hideOverflow:{ overflow: "hidden" },
-  addEventButton: {
+  hideOverflow:
+  { 
+    overflow: "hidden"
+  },
+  addEventButton: 
+  {
     color: "white",
     borderRadius: 4,
     borderWidth: 10
