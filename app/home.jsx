@@ -17,6 +17,7 @@ export default function Home() {
   const [clubName, setClubName] = useState(null);
   const [firstName, setFirstName] = useState(null);
   const [lastName, setLastName] = useState(null);
+  const [playerId,setPlayerId] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,6 +50,7 @@ export default function Home() {
         setClubName(row?.clubName ?? row?.data?.clubName ?? null);
         setFirstName(row?.firstName ?? row?.data?.firstName ?? null);
         setLastName(row?.lastName ?? row?.data?.lastName ?? null);
+        setPlayerId(user.$id);
       } catch (e) {
         if (alive) setError(e?.message ?? String(e));
       } finally {
@@ -162,10 +164,10 @@ export default function Home() {
         </View>
       }
       onPressSchedule={() =>
-        router.push({ pathname: '/Schedule', params: { clubName,role , firstName} })
+        router.push({ pathname: '/Schedule', params: { clubName,role , name: `${firstName} ${lastName}`,playerId} })
       }
       onPressTeams={() => 
-        router.push({ pathname: '/Teams', params: { clubName,role , firstName}})
+        router.push({ pathname: '/Teams', params: { clubName,role , name: `${firstName} ${lastName}` ,playerId}})
       }
       onPressProfile={() => {}}
     >

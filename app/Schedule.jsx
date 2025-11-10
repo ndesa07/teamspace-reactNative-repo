@@ -24,6 +24,30 @@ const ymd = (d) => {
   const pad = (n) => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 };
+async function upsertAvailability({ eventId, userId, available,name1,clubName1 }) {
+
+  
+  const res = await tablesDb.listRows("68cfc3d00013a224d25f", "availability", [
+    Query.equal('EventId', eventId),
+    Query.equal('PlayerID', userId),
+    Query.limit(1),
+  ]);
+  const rows = res.rows ?? res.documents ?? [];
+  if (rows.length) {
+    // update
+    await tablesDb.updateRow("68cfc3d00013a224d25f", "availability", rows[0].$id, { Available: !!available });
+  } else {
+    // create
+    
+    await tablesDb.createRow("68cfc3d00013a224d25f", "availability", ID.unique(), {
+      EventId: eventId,
+      PlayerID: userId,
+      PlayerName: name1,
+      ClubName: clubName1,
+      Available: !!available,
+    });
+  }
+}
 
 async function getEventsOnDay(date, clubName)
 {
@@ -36,6 +60,19 @@ async function getEventsOnDay(date, clubName)
   const res = await tablesDb.listRows("68cfc3d00013a224d25f", "eventstable", filters);
   const rows = res?.rows ?? res?.documents ?? [];
   return rows;
+}
+async function loadAvailability(eventId) 
+{
+  const res = await tablesDb.listRows(
+    "68cfc3d00013a224d25f",
+    "availability",
+    [
+      Query.equal("EventId", [eventId]),
+      Query.limit(200),
+    ]
+  );
+
+  return res.rows ?? res.documents ?? [];
 }
 
 function getWeek(anchor) 
@@ -57,6 +94,7 @@ function getDayOfWeek(num)
   const dayOfWeek= ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
   return dayOfWeek[num]
 }
+
 export default function Schedule()
 {
   const calRef = useRef(null);
@@ -64,6 +102,8 @@ export default function Schedule()
   const clubName = Array.isArray(params.clubName) ? params.clubName[0] : params.clubName;
   const role = Array.isArray(params.role) ? params.role[0] : params.role;
   const name = Array.isArray(params.name) ? params.name[0] : params.name;
+  const playerId = Array.isArray(params.playerId) ? params.playerId[0] : params.playerId; // <-- use playerId
+
   const [weekDates, setweekDates] = useState([]);
   const [eventsByDay, setEventsByDay] = useState({});
   const [eventDetailModal, setEventDetailModal] = useState(false);
@@ -76,16 +116,48 @@ export default function Schedule()
   const [submitting, setSubmitting] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mode, setMode] = useState('week') // whatever you use
-
+  const [myAvailFromDB, setMyAvailFromDB] = useState(null);
+  const [availabilityRows, setAvailabilityRows] = useState([]);
   const calHeight = useRef(new Animated.Value(WEEK_H)).current;
   const baseHeightRef = useRef(WEEK_H);
   const [anchorDate, setAnchorDate] = useState(new Date());
+  const [user,setUser] = useState(null);
+  const [availabilityList,setAvailabilityList] = useState([])
+
   
 
 
   const isAdmin = typeof role === "string" && role.toLowerCase() === "admin";
   const isCaptain = typeof role === "string" && role.toLowerCase() === "captain";
+async function loadEventDetails(evt) {
 
+  const availRows = await loadAvailability(evt.$id);
+
+  // Get all player profile rows
+  const playerProfiles = {};
+  for (let row of availRows) {
+    const profile = await tablesDb.getRow(
+      "68cfc3d00013a224d25f",
+      "name",
+      row.PlayerID
+    );
+    if (profile) {
+      playerProfiles[row.PlayerID] = profile;
+    }
+  }
+  // Build clean list
+  const fullList = availRows.map(row => ({
+    playerId: row.PlayerID,
+    playerName: playerProfiles[row.PlayerID]?.firstName + " " + playerProfiles[row.PlayerID]?.lastName,
+    available: row.Available,
+  }));
+
+  setAvailabilityList(fullList);
+  setMyAvailFromDB(
+    fullList.find(x => x.playerId === playerId)?.available ?? null
+  );
+
+}
   const handleAnchor = useCallback((date) => {
     setweekDates(getWeek(date));
     setSelectedDate(ymd(date));
@@ -97,6 +169,7 @@ export default function Schedule()
     loadEvents(ymd(date));
   }, [loadEvents]);
   
+
 
   useEffect(() => {
     if (!clubName || weekDates.length === 0) return;
@@ -160,6 +233,7 @@ export default function Schedule()
       Animated.spring(calHeight, { toValue: WEEK_H, useNativeDriver: false, bounciness: 0 }).start();
     }
   }, [mode, loadEvents]);
+  
   
   const handleSubmit = async ({ EventName, EventBody, Date, Active,Time }) => {
     try {
@@ -225,14 +299,15 @@ export default function Schedule()
     setMode(nextIsMonth ? 'month' : 'week');
   };
 
+
   return (
     <Layout
       title="Schedule"
       headerExtras 
       onPressSchedule={() =>
-        router.push({ pathname: '/Schedule', params: { clubName,role,name } })}
+        router.push({ pathname: '/Schedule', params: { clubName,role,name,playerId } })}
       onPressTeams={() =>
-        router.push({ pathname: '/Teams' , params: { clubName,role,name }})}
+        router.push({ pathname: '/Teams' , params: { clubName,role,name,playerId }})}
     >
       <View style={styles.hideOverflow}>
       <Animated.View style={{ height: calHeight, overflow: 'hidden' }}>
@@ -308,7 +383,7 @@ export default function Schedule()
                     {todays.map((evt, idx) => (
                       <Pressable
                         key={evt.$id}
-                        onPress={() => { setSelectedEvent(evt); setEventDetailModal(true); }}
+                        onPress={() => { loadEventDetails(evt); setSelectedEvent(evt); setEventDetailModal(true); }}
                         style={({ pressed }) => [
                           styles.eventBox,
                           idx !== todays.length - 1 && styles.eventBoxSpacer,
@@ -340,9 +415,16 @@ export default function Schedule()
         onClose={() => setEventDetailModal(false)}
         event={selectedEvent}
         heading={"Event"}
+        userId={playerId}
+        name1={name}
+        clubName1={clubName}
         canEdit={isAdmin || isCaptain}
         canDelete={isAdmin || isCaptain}
         updating={updatingDetail}
+        myAvailability={myAvailFromDB ?? null}
+        availabilityList = {availabilityList}
+        onSetAvailability={upsertAvailability}
+
         onUpdate={async ({ EventName, EventBody, Active, Date,Time }) => {
           try {
             setUpdatingDetail(true);
