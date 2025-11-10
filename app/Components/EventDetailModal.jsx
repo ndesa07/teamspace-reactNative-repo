@@ -43,7 +43,8 @@ export default function EventDetailModal({
   updateDelete,
   myAvailability = null,   // ← NEW (true/false/null)
   onSetAvailability,       // ← NEW
-  availabilityList = [], 
+  availabilityList = [],
+  onRefreshAvailability 
 }) {
   const initialName   = event?.EventName ?? event?.Title ?? "";
   const initialBody   = event?.EventBody ?? event?.Body ?? "";
@@ -87,6 +88,9 @@ export default function EventDetailModal({
           clubName1,
           
         });
+        if (typeof onRefreshAvailability === "function") {
+        await onRefreshAvailability();
+      }
       } catch (e) {
         console.warn('Failed to save availability', e);
       } finally {
@@ -299,7 +303,7 @@ export default function EventDetailModal({
             {/* ===== NEW: AVAILABILITY SECTION ===== */}
 
           {/* Player self-mark availability (always visible to non-admins; admins can ignore) */}
-          {isEditing && (
+          { (
             <View style={styles.availBlock}>
                 <Text style={styles.label}>My Availability</Text>
 
@@ -338,7 +342,7 @@ export default function EventDetailModal({
           )}
 
           {/* Admin list of available players */}
-          {!isEditing && (
+          {canEdit && (
             <View style={styles.availListBlock}>
               <Text style={styles.label}>Available Players ({availablePlayers.length})</Text>
               <View style={styles.availListBox}>

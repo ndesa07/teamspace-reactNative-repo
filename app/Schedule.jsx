@@ -75,6 +75,7 @@ async function loadAvailability(eventId)
   return res.rows ?? res.documents ?? [];
 }
 
+
 function getWeek(anchor) 
 {
   const d = new Date(anchor);
@@ -129,6 +130,25 @@ export default function Schedule()
 
   const isAdmin = typeof role === "string" && role.toLowerCase() === "admin";
   const isCaptain = typeof role === "string" && role.toLowerCase() === "captain";
+  const fetchAvailability = async (eventId, playerId) => {
+  const res = await tablesDb.listRows(
+    "68cfc3d00013a224d25f",
+    "availability",
+    [ Query.equal("EventId", [eventId]), Query.limit(200) ]
+  );
+  const rows = res.rows ?? res.documents ?? [];
+
+  const fullList = rows.map(r => ({
+    playerId:  r.PlayerID ?? r.playerId ?? r.data?.PlayerID,
+    playerName:r.PlayerName ?? r.playerName ?? r.data?.PlayerName ?? "Unknown",
+    available: Boolean(r.Available ?? r.available ?? r.data?.Available),
+  }));
+
+  setAvailabilityList(fullList);
+  if (playerId) {
+    setMyAvailFromDB(fullList.find(x => x.playerId === playerId)?.available ?? null);
+  }
+};
 async function loadEventDetails(evt) {
 
   const availRows = await loadAvailability(evt.$id);
@@ -383,7 +403,10 @@ async function loadEventDetails(evt) {
                     {todays.map((evt, idx) => (
                       <Pressable
                         key={evt.$id}
-                        onPress={() => { loadEventDetails(evt); setSelectedEvent(evt); setEventDetailModal(true); }}
+                        onPress={async () => {
+                        setSelectedEvent(evt);
+                        await fetchAvailability(evt.$id, /* your current playerId here */ playerId);
+                        setEventDetailModal(true)}}
                         style={({ pressed }) => [
                           styles.eventBox,
                           idx !== todays.length - 1 && styles.eventBoxSpacer,
@@ -407,7 +430,7 @@ async function loadEventDetails(evt) {
         onClose={() => setAddEventModal(false)}
         onSubmit={handleSubmit}
         submitting={submitting}
-        initialName={name}
+        initialName={""}
       />
 
       <EventDetailModal
@@ -424,6 +447,11 @@ async function loadEventDetails(evt) {
         myAvailability={myAvailFromDB ?? null}
         availabilityList = {availabilityList}
         onSetAvailability={upsertAvailability}
+        onRefreshAvailability={async () => {
+              if (selectedEvent?.$id) {
+                await fetchAvailability(selectedEvent.$id, playerId);
+              }
+            }}
 
         onUpdate={async ({ EventName, EventBody, Active, Date,Time }) => {
           try {

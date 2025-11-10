@@ -39,6 +39,8 @@ export default function Teams() {
 }));
 const isAdmin = role === 'admin';
 const canEditTeam = isAdmin && !!selectedTeam;
+
+
 const removeMember = async (rowId) => {
   // optimistic UI: show spinner on this row
   setRemovingIds(prev => new Set(prev).add(rowId));
@@ -134,10 +136,12 @@ const removeMember = async (rowId) => {
           options={teams.map((team) => ({ label: team.Name, value: team.$id }))}
           value={selectedTeamName}
           required={true}
+          
           showError={false}
           maxResults={10}
           style={{ marginTop: 20 }}
           onOpen={() => {
+            fetchTeams();
              setSelectedTeam(null);
              setIsSelectOpen(true);
 
@@ -263,6 +267,7 @@ const removeMember = async (rowId) => {
                     ClubName: ClubName,
                   }
                 );
+                await fetchTeams();
         } catch (e) {
           console.warn('Failed to create team', e);
         }
@@ -296,6 +301,8 @@ const removeMember = async (rowId) => {
           )
         )
       );
+      const teamPlayers = await fetchTeamPlayers(teamId);
+      setMatchPlayers(teamPlayers); 
       setEditTeamModalVisible(false);
       
      } 

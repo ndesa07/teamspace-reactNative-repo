@@ -131,7 +131,8 @@ export const common = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 5,
-    backgroundColor: colors.surfaceAlt
+    backgroundColor: colors.surfaceAlt,
+    borderColor: colors.border
   },
   pushButtonNav: {
     flexDirection: "row",
