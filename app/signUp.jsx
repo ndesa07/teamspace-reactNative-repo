@@ -18,23 +18,21 @@ import { router } from "expo-router";
 import { common, colors } from "./styles/common";
 import { account, ID, tablesDb } from "../lib/appwrite";
 import { DB_ID, Table_ID } from "../lib/constants";
-import { Query } from "../lib/appwrite";
+import { Query } from "react-native-appwrite";
 import ClubSearchDropdown from "./Components/dropDownBar";
-
+import { sendWelcomeEmail } from "./Functions/WelcomeEmail";
 
 /* ----------------------------------- Page ----------------------------------- */
 export default function SignUp() {
-  const [role, setRole] = useState(""); // 'admin' | 'captain' | 'player'
+  const [role, setRole] = useState("");
   const [firstName, setFirst] = useState("");
   const [lastName, setLast] = useState("");
   const [email, setEmail] = useState("");
   const [clubName, setClubName] = useState("");
-  //const [teamNumber, setTeamNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  
+  const [sortCode, setSortCode] = useState("");
 
-  // Clubs list for captain/player
   const [clubs, setClubs] = useState([]);
   const [clubsLoading, setClubsLoading] = useState(false);
   const [clubsError, setClubsError] = useState(null);
@@ -42,19 +40,14 @@ export default function SignUp() {
   const isAdmin = role === "admin";
   const needsClubSelect = role === "captain" || role === "player";
 
-  // Validation
   const isValid = useMemo(() => {
     if (!role) return false;
     if (!firstName || !lastName || !email || !password || !confirm) return false;
     if (password !== confirm) return false;
+    if (isAdmin && !clubName) return false;
 
-    if (isAdmin) {
-      if (!clubName) return false;
-    } else if (needsClubSelect) {
-      if (!clubName || clubsLoading) return false;
-    }
     return true;
-  }, [role, firstName, lastName, email, password, confirm, clubName, isAdmin, needsClubSelect, clubsLoading]);
+  }, [role, firstName, lastName, email, password, confirm, clubName, isAdmin]);
 
   const handleRoleChange = (v) => {
     setRole(v);
@@ -72,7 +65,6 @@ export default function SignUp() {
     }
   };
 
-  // Load club names for captain/player
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -107,12 +99,10 @@ export default function SignUp() {
 
   const onSubmit = async () => {
     try {
-      // end any current session on this device (safe if none)
       try {
         await account.deleteSession?.("current");
       } catch {}
 
-      // create user
       const newUser = await account.create(
         ID.unique(),
         email.trim(),
@@ -120,23 +110,58 @@ export default function SignUp() {
         `${firstName} ${lastName}`
       );
 
-      // start session
       if (account.createEmailPasswordSession) {
         await account.createEmailPasswordSession(email.trim(), password);
       } else {
-        // older SDK
-        // @ts-ignore
         await account.createEmailSession(email.trim(), password);
       }
 
-      // write member row (document id == user id)
-      await tablesDb.createRow("68cfc3d00013a224d25f", "name", newUser.$id, {
-        clubName: clubName,
-        firstName,
-        lastName,
-        role,
-        email: email.trim(),
-      });
+      if (isAdmin) {
+        const newSortCode = ID.unique();
+        setSortCode(newSortCode);
+
+        await tablesDb.createRow("68cfc3d00013a224d25f", "clubtable", ID.unique(), {
+          clubName,
+          SortCode: newSortCode,
+        });
+
+        await tablesDb.createRow("68cfc3d00013a224d25f", "name", newUser.$id, {
+          clubName,
+          firstName,
+          lastName,
+          role,
+          email: email.trim(),
+        });
+
+        await sendWelcomeEmail({
+          email,
+          name: `${firstName} ${lastName}`,
+          clubName,
+          sortCode: newSortCode,
+        });
+      } else {
+        const res = await tablesDb.listRows("68cfc3d00013a224d25f", "clubtable", [
+          Query.equal("SortCode", [sortCode]),
+          Query.limit(1),
+        ]);
+
+        const row = res.rows?.[0] || res.documents?.[0] || null;
+
+        if (!row) {
+          console.warn("No club found for that sort code");
+          return;
+        }
+
+        const cname = row.clubName || row.data?.clubName;
+
+        await tablesDb.createRow("68cfc3d00013a224d25f", "name", newUser.$id, {
+          clubName: cname,
+          firstName,
+          lastName,
+          role,
+          email: email.trim(),
+        });
+      }
 
       router.replace("/home");
     } catch (e) {
@@ -145,19 +170,23 @@ export default function SignUp() {
     }
   };
 
-  // ---------- BLANK (except picker) UNTIL ROLE CHOSEN ----------
   if (!role) {
     return (
       <View style={common.screen}>
-        <View style={[common.container, { justifyContent: "center", alignItems: "center" }]}>
-        <View style={[common.header, { alignItems: "center" }]}>
+        <View
+          style={[common.container, { justifyContent: "center", alignItems: "center" }]}
+        >
+          <View style={[common.header, { alignItems: "center" }]}>
             <Text style={common.title}>Select Role</Text>
             <View style={common.divider} />
           </View>
-          <View style = {[{paddingBottom: "10"}]}> 
-            <Text style = {[{color: colors.surface},{fontWeight: "40"},{fontSize: "20"}]}>To create a new club select the admin option. </Text>
-            <Text style = {[{color: colors.surface},{fontWeight: "40"},{fontSize: "20"}]}>To Join a team select the captain or player option. </Text>
-
+          <View style={[{ paddingBottom: "10" }]}>
+            <Text style={[{ color: colors.surface }, { fontWeight: "40" }, { fontSize: "20" }]}>
+              To create a new club select the admin option.
+            </Text>
+            <Text style={[{ color: colors.surface }, { fontWeight: "40" }, { fontSize: "20" }]}>
+              To Join a team select the captain or player option.
+            </Text>
           </View>
           <View style={[styles.pickerWrap, { width: "80%" }]}>
             <Picker
@@ -166,19 +195,20 @@ export default function SignUp() {
               dropdownIconColor={colors.surface}
               style={styles.picker}
             >
-              <Picker.Item label="Select role..." value="" color = {colors.surface} />
-              <Picker.Item label="Admin" value="admin" color = {colors.surface}/>
-              <Picker.Item label="Captain" value="captain" color = {colors.surface}/>
-              <Picker.Item label="Player" value="player"color = {colors.surface} />
+              <Picker.Item label="Select role..." value="" color={colors.surface} />
+              <Picker.Item label="Admin" value="admin" color={colors.surface} />
+              <Picker.Item label="Captain" value="captain" color={colors.surface} />
+              <Picker.Item label="Player" value="player" color={colors.surface} />
             </Picker>
           </View>
         </View>
-        <View style ={[{flex: 1}]} />   
+        <View style={[{ flex: 1 }]} />
       </View>
     );
   }
 
-  // ---------- FULL FORM ----------
+  // ---------------------------------------------------------------------------
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={common.screen}>
@@ -192,7 +222,6 @@ export default function SignUp() {
           </View>
 
           <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-            {/* Role */}
             <Text style={styles.label}>Role</Text>
             <View style={styles.pickerWrap}>
               <Picker
@@ -201,12 +230,12 @@ export default function SignUp() {
                 dropdownIconColor={colors.surface}
                 style={styles.picker}
               >
-                <Picker.Item label="Admin / Coach" value="admin"color = {colors.surface} />
-                <Picker.Item label="Captain" value="captain"color = {colors.surface} />
-                <Picker.Item label="Player" value="player" color = {colors.surface}/>
+                <Picker.Item label="Admin / Coach" value="admin" color={colors.surface} />
+                <Picker.Item label="Captain" value="captain" color={colors.surface} />
+                <Picker.Item label="Player" value="player" color={colors.surface} />
               </Picker>
             </View>
-            
+
             {isAdmin && (
               <>
                 <Text style={styles.label}>Club Name (create)</Text>
@@ -217,36 +246,23 @@ export default function SignUp() {
                   placeholder="e.g., UNSW Cricket Club"
                   placeholderTextColor={colors.muted}
                 />
-                {/*
-                <Text style={styles.label}>Team Number (create)</Text> 
-                <TextInput
-                  style={styles.input}
-                  value={teamNumber}
-                  onChangeText={setTeamNumber}
-                  keyboardType="numeric"
-                  placeholder="Create a numeric team code"
-                  placeholderTextColor={colors.muted}
-                />
-                */}
-              </>
-            )}
-            
-            {/* Captain/Player: typeahead club select */}
-            {needsClubSelect && (
-              <>
-                <Text style={styles.label}>Select Club</Text>
-                {(
-                  <ClubSearchDropdown
-                    value={clubName}
-                    onChange={setClubName}
-                    required
-                    showError={!clubName}         // or hook this to your form validation
-                  />
-                )}
               </>
             )}
 
-            {/* Common fields */}
+            {!isAdmin && (
+              <>
+                <Text style={styles.label}>Sort Code (create)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={sortCode}
+                  onChangeText={setSortCode}
+                  keyboardType="numeric"
+                  placeholder="Enter Sort Code To Join A Team"
+                  placeholderTextColor={colors.muted}
+                />
+              </>
+            )}
+
             <Text style={styles.label}>First Name</Text>
             <TextInput
               style={styles.input}
@@ -299,7 +315,6 @@ export default function SignUp() {
               <Text style={styles.error}>Passwords do not match</Text>
             )}
 
-            {/* Actions */}
             <View style={styles.actionsRow}>
               <View style={styles.buttonOutline}>
                 <Button
@@ -376,7 +391,6 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     textDecorationLine: "underline",
   },
-  // Dropdown panel
   dropdown: {
     position: "absolute",
     top: 50,
@@ -388,7 +402,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     maxHeight: 220,
     zIndex: 20,
-    elevation: 4, // Android shadow
+    elevation: 4,
   },
   dropdownItem: {
     paddingVertical: 10,
