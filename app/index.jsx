@@ -101,7 +101,7 @@ export default function Login()
                     setPassword("");
                     Keyboard.dismiss();
                   }
-                } color={colors.onSurface} />
+                } color={colors.surface} />
               </View>
               <View style={styles.buttonOutline}>
                 <Button
