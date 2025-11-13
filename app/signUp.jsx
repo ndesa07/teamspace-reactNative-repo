@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 10,
     backgroundColor: colors.surfaceAlt,
-    color: colors.onSurface,
+    color: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },

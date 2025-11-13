@@ -12,8 +12,9 @@
   "dependencies": {
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-picker/picker": "2.11.1",
-    "expo": "^54.0.22",
+    "expo": "54.0.23",
     "expo-constants": "~18.0.10",
+    "expo-dev-client": "~6.0.17",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.14",
     "expo-status-bar": "~3.0.8",

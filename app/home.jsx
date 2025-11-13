@@ -174,7 +174,7 @@ export default function Home() {
       <ScrollView style={common.scrollView} contentContainerStyle={{ padding: 16 }}>
         
         {announcements.length === 0 ? (
-          <Text style={{ color: "white", opacity: 0.9 }}>No announcements are here.</Text>
+          <Text style={{ color: colors.surface, opacity: 0.9 }}>No announcements are here.</Text>
         ) : (
           announcements.map((a) => (
             
@@ -184,15 +184,15 @@ export default function Home() {
               }}>
                 <View style={{ marginBottom: 12 }}>
                 
-                    <Text style={{ color: "white", fontWeight: "700", fontSize: "20" }}>
+                    <Text style={{ color: colors.surface, fontWeight: "700", fontSize: "20" }}>
                         {a.titleText ?? a.title}
                     </Text>
-                    <View style = {{borderWidth:1, borderColor: "white", marginBottom: 10}} />
-                    <Text style={{ color: "white" }}>
+                    <View style = {{borderWidth:1, borderColor: colors.border, marginBottom: 10}} />
+                    <Text style={{ color: colors.surface }}>
                       {(a.bodyText ?? a.body ?? '').slice(0, 60)}
                       {(a.bodyText ?? a.body ?? '').length > 60 ? '…' : ''}
                     </Text>
-                <View style={{ height: 9, backgroundColor: "#fff", opacity: 0.6, marginTop: 8,width: "100%"}} />
+                <View style={{ height: 9, backgroundColor: colors.border, opacity: 0.6, marginTop: 8,width: "100%"}} />
                 </View>
             </Pressable>
           ))
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
 
   },
   actionIcon: { marginRight: 6 },
-  announcmentsText: { fontWeight: "600", fontSize: 16, color: "white" },
+  announcmentsText: { fontWeight: "600", fontSize: 16, color: colors.surface },
   centerSubtitle: { textAlign: "center", alignSelf: "center", width: "100%" },
 
 });

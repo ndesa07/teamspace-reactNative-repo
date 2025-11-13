@@ -294,11 +294,11 @@ async function loadEventDetails(evt) {
   };
 
   const calendarTheme = React.useMemo(() => ({
-    headerFontColor: "white",
-    selectedDayFontColor: "white",
-    dayFontColor: "white",
-    dayInactiveFontColor: "white",
-    dayLabelColor: "white",
+    headerFontColor: colors.surface,
+    selectedDayFontColor: colors.surface,
+    dayFontColor: colors.surface,
+    dayInactiveFontColor: colors.surface,
+    dayLabelColor: colors.surface,
     headerFontSize: 30,
     dayLabelFontSize: 14,
     dayFontSize: 18,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   {
     flex: 1,
     borderRadius: 10,
-    borderColor: "white",
+    borderColor: colors.border,
     borderWidth: 2,
     marginTop: 5,
     marginBottom: 5
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     padding: 10,
     flex: 1,
     fontSize: 20,
-    color: 'white',
+    color: colors.surface,
     fontWeight: '400',
   },
   inEventRow: 
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 4,
-    borderColor: 'white',
+    borderColor: colors.border,
     borderWidth: 2,
   },
   eventBox: 
@@ -562,10 +562,4 @@ const styles = StyleSheet.create({
   { 
     overflow: "hidden"
   },
-  addEventButton: 
-  {
-    color: "white",
-    borderRadius: 4,
-    borderWidth: 10
-  }
 });

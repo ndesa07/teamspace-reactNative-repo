@@ -37,8 +37,8 @@ export default function Teams() {
   value: p.$id,
  
 }));
-const isAdmin = role === 'admin';
-const canEditTeam = isAdmin && !!selectedTeam;
+const isAdmin = role === 'admin' || role === 'captain';
+const canEditTeam = isAdmin && selectedTeam;
 
 
 const removeMember = async (rowId) => {
@@ -195,25 +195,27 @@ const removeMember = async (rowId) => {
                       {idx + 1}. {p.Player}
                     </Text>
 
-                    <Pressable
-                      onPress={() => removeMember(p.$id)}
-                      disabled={isRemoving}
-                      style={{
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        backgroundColor: colors.surfaceAlt,
-                        opacity: isRemoving ? 0.6 : 1,
-                      }}
-                    >
-                      {isRemoving ? (
-                        <ActivityIndicator size="small" color={colors.surface} />
-                      ) : (
-                        <Text style={{ color: colors.surface, fontSize: 12 }}>Remove</Text>
-                      )}
-                    </Pressable>
+                    {isAdmin && (
+                      <Pressable
+                        onPress={() => removeMember(p.$id)}
+                        disabled={isRemoving}
+                        style={{
+                          paddingVertical: 6,
+                          paddingHorizontal: 10,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: colors.surfaceAlt,
+                          opacity: isRemoving ? 0.6 : 1,
+                        }}
+                      >
+                        {isRemoving ? (
+                          <ActivityIndicator size="small" color={colors.surface} />
+                        ) : (
+                          <Text style={{ color: colors.surface, fontSize: 12 }}>Remove</Text>
+                        )}
+                      </Pressable>
+                    )}
                   </View>
                 );
               })}

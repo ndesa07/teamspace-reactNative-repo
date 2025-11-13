@@ -2,16 +2,17 @@
 import { StyleSheet } from "react-native";
 
 export const colors = {
-  background: "#0b1020",
-  surface: "#eaf6ff",
-  surfaceAlt: "#0b2336",
-  border: "#234a7a",
-  onBackground: "#eaf6ff",
-  onSurface: "#d9ecff",
-  muted: "#7db4ff",
-  dividerOnBg: "rgba(234,246,255,0.16)",
-  dividerOnSurface: "rgba(255,255,255,0.08)",
+  background: "#11192C",       // Softer, modern navy
+  surface: "#F0F7FF",          // Clean, modern near-white
+  surfaceAlt: "#152B44",       // Elevated buttons / cards
+  border: "#3B6A9C",           // More modern desaturated border
+  onBackground: "#F0F7FF",     // Crisp text on dark bg
+  onSurface: "#0D1B2A",        // Clean text on light surface
+  muted: "#8CB8E8",            // Softer, modern accent
+  dividerOnBg: "rgba(240,247,255,0.12)",
+  dividerOnSurface: "rgba(0,0,0,0.06)",
 };
+
 
 export default {};
 
