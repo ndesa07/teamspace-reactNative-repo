@@ -173,30 +173,64 @@ export default function Home() {
     >
       <ScrollView style={common.scrollView} contentContainerStyle={{ padding: 16 }}>
         
-        {announcements.length === 0 ? (
-          <Text style={{ color: colors.surface, opacity: 0.9 }}>No announcements are here.</Text>
+                {announcements.length === 0 ? (
+          <Text style={{ color: colors.surface, opacity: 0.9 }}>
+            No announcements are here.
+          </Text>
         ) : (
           announcements.map((a) => (
-            
-            <Pressable key={a.$id} onPress={() => { 
-                setSelectedAnnouncement(a); 
-                setDetailVisible(true); 
-              }}>
-                <View style={{ marginBottom: 12 }}>
-                
-                    <Text style={{ color: colors.surface, fontWeight: "700", fontSize: "20" }}>
-                        {a.titleText ?? a.title}
-                    </Text>
-                    <View style = {{borderWidth:1, borderColor: colors.border, marginBottom: 10}} />
-                    <Text style={{ color: colors.surface }}>
-                      {(a.bodyText ?? a.body ?? '').slice(0, 60)}
-                      {(a.bodyText ?? a.body ?? '').length > 60 ? '…' : ''}
-                    </Text>
-                <View style={{ height: 9, backgroundColor: colors.border, opacity: 0.6, marginTop: 8,width: "100%"}} />
-                </View>
+            <Pressable
+              key={a.$id}
+              onPress={() => {
+                setSelectedAnnouncement(a);
+                setDetailVisible(true);
+              }}
+              style={{
+                marginBottom: 16,
+                backgroundColor: colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 10,
+                padding: 14,
+              }}
+            >
+              {/* Title */}
+              <Text
+                style={{
+                  color: colors.surface,
+                  fontWeight: "700",
+                  fontSize: 18,
+                  marginBottom: 6,
+                }}
+              >
+                {a.titleText ?? a.title}
+              </Text>
+
+              {/* Divider */}
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: colors.dividerOnSurface,
+                  marginBottom: 8,
+                }}
+              />
+
+              {/* Body preview */}
+              <Text
+                style={{
+                  color: colors.surface,
+                  opacity: 0.85,
+                  fontSize: 14,
+                  lineHeight: 20,
+                }}
+              >
+                {(a.bodyText ?? a.body ?? "").slice(0, 90)}
+                {(a.bodyText ?? a.body ?? "").length > 90 ? "…" : ""}
+              </Text>
             </Pressable>
           ))
         )}
+
       </ScrollView>
 
       <AnnouncementDetailModal
