@@ -14,6 +14,7 @@ import {
   Keyboard,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import SelectBar from "./SelectBar";
 
 function pad(n) { return String(n).padStart(2, "0"); }
 function ymd(d) {
@@ -41,6 +42,8 @@ export default function EventModal({
   initialEventName = "",
   initialBody = "",
   initialActive = true,
+  options = [],
+  initialTeamId = null,
 }) {
   const [eventName, setEventName] = useState(initialEventName || initialName);
   const [eventBody, setEventBody] = useState(initialBody);
@@ -51,6 +54,8 @@ export default function EventModal({
   const [showDate, setShowDate] = useState(false);
   const [showTime, setShowTime] = useState(false);
   const [error, setError] = useState("");
+  const [team, setTeam] = useState(initialTeamId || "");
+
 
   useEffect(() => {
     if (visible) {
@@ -64,8 +69,9 @@ export default function EventModal({
       setError("");
       setShowDate(false);
       setShowTime(false);
+      setTeam(initialTeamId || "");
     }
-  }, [visible, initialEventName, initialBody, initialActive, initialName]);
+  }, [visible, initialEventName, initialBody, initialActive, initialName, initialTeamId]);
 
   const onChangeDate = (_e, selected) => {
     setShowDate(false);
@@ -82,7 +88,8 @@ export default function EventModal({
       setDateStr(ymd(merged));
     }
   };
-
+  const selectedTeamLabel =
+  options.find(o => o.value === team)?.label ?? ""; 
   const onChangeTime = (_e, selected) => {
     setShowTime(false);
     if (selected) {
@@ -105,6 +112,7 @@ export default function EventModal({
       Date: dateStr,
       Time: timeStr,
       Active: isActive,
+      EventType:team,
     });
   };
 
@@ -132,6 +140,24 @@ export default function EventModal({
                   placeholderTextColor="#9CA3AF"
                   style={styles.input}
                 />
+              </View>
+              <View style ={{margin: 1, marginBottom: 20}}>
+                <SelectBar
+                  label="Team"
+                  options= {options}
+                  value={selectedTeamLabel}
+                  onChange={setTeam}
+                  palette={{
+                    bg: "white",       // background of input & dropdown
+                    text: "#0b1020",     // text color
+                    border: "#d1d5db",   // border color
+                    overlay: "white",  // dropdown background
+                    hint: "#0b1020",     // placeholder + chevron color
+                  }}
+                  
+                />
+
+                
               </View>
 
               <View style={styles.row}>

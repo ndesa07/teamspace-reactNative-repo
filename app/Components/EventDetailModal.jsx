@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useMemo } from "react";
 import { Modal, View, Text, Pressable, StyleSheet, ScrollView, TextInput, Switch, Platform, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import SelectBar from "./SelectBar";
 
 function pad(n) { return String(n).padStart(2, "0"); }
 function toAmPm(h, m) {
@@ -44,9 +45,14 @@ export default function EventDetailModal({
   myAvailability = null,   // ← NEW (true/false/null)
   onSetAvailability,       // ← NEW
   availabilityList = [],
-  onRefreshAvailability 
+  onRefreshAvailability,
+  team,
+  options = [],
+  initialTeamId,
+
 }) {
   const initialName   = event?.EventName ?? event?.Title ?? "";
+  const initialTeamValue = initialTeamId || event?.EventType || "";
   const initialBody   = event?.EventBody ?? event?.Body ?? "";
   const initialActive = (event?.Active ?? false) === true;
   const initialDate   = event?.Date ?? "";
@@ -66,6 +72,11 @@ export default function EventDetailModal({
     if (initialDate) return new Date(initialDate);
     return new Date();
   });
+  const [teamId, setTeamId] = useState(initialTeamId || "");
+  const teamLabel = useMemo(
+    () => options.find(o => o.value === teamId)?.label ?? "",
+    [options, teamId]
+  );
  useEffect(() => {
       if (visible) {
         setMyAvail(
@@ -120,8 +131,10 @@ export default function EventDetailModal({
       setShowDate(false);
       setShowTime(false);
       setError("");
+      setTeamId(initialTeamId || event?.EventType || "");  // ⭐ here
+
     }
-  }, [visible, event?.$id]);
+  }, [visible, event?.$id,initialTeamId]);
 
   if (!visible || !event) return null;
 
@@ -134,12 +147,15 @@ export default function EventDetailModal({
     isYmd(dateStr) &&
     String(timeStr).trim().length > 0;
 
-  const changed =
-    name.trim() !== initialName.trim() ||
-    body.trim() !== initialBody.trim() ||
-    Boolean(active) !== Boolean(initialActive) ||
-    String(dateStr ?? "").trim() !== String(initialDate ?? "").trim() ||
-    String(timeStr ?? "").trim() !== String(initialTime ?? "").trim();
+ const changed =
+  name.trim() !== initialName.trim() ||
+  body.trim() !== initialBody.trim() ||
+  Boolean(active) !== Boolean(initialActive) ||
+  String(dateStr ?? "").trim() !== String(initialDate ?? "").trim() ||
+  String(timeStr ?? "").trim() !== String(initialTime ?? "").trim() ||
+  String(teamId ?? "").trim() !== String(initialTeamValue ?? "").trim();
+
+
 
   const handlePickDate = (_e, selected) => {
     setShowDate(false);
@@ -181,6 +197,7 @@ export default function EventDetailModal({
       Active: active,
       Date: String(dateStr).trim(),
       Time: String(timeStr || "").trim(),
+      EventType: teamId,
     });
     setIsEditing(false);
   };
@@ -200,22 +217,60 @@ export default function EventDetailModal({
               )}
 
               <View style={styles.titleRow}>
-                {isEditing ? (
-                  <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Event name"
-                    placeholderTextColor="#9CA3AF"
-                    style={styles.titleInput}
-                  />
-                ) : (
-                  <Text style={styles.title}>{initialName || "(Untitled event)"}</Text>
-                )}
-                <View style={[styles.badge, initialActive ? styles.badgeActive : styles.badgeInactive]}>
-                  <Text style={styles.badgeText}>{initialActive ? "Active" : "Inactive"}</Text>
+                <View style={{ flex: 1 }}>
+                  {isEditing && (
+                    <Text style={styles.editTitle}>Event name</Text>
+                  )}
+
+                  {isEditing ? (
+                    <TextInput
+                      value={name}
+                      onChangeText={setName}
+                      placeholder="Event name"
+                      placeholderTextColor="#9CA3AF"
+                      style={styles.titleInput}
+                    />
+                  ) : (
+                    <Text style={styles.title}>
+                      {initialName || "(Untitled event)"}
+                    </Text>
+                  )}
+                </View>
+
+                <View
+                  style={[
+                    styles.badge,
+                    initialActive ? styles.badgeActive : styles.badgeInactive,
+                  ]}
+                >
+                  <Text style={styles.badgeText}>
+                    {initialActive ? "Active" : "Inactive"}
+                  </Text>
                 </View>
               </View>
+              {isEditing ? (
+                <View style={{ margin: 1, marginBottom: 20 }}>
+                  <SelectBar
+                    label="Team"
+                    value={teamLabel}
+                    onChange={setTeamId}
+                    options={options}
+                    palette={{
+                      bg: "white",
+                      text: "#0b1020",
+                      border: "#d1d5db",
+                      overlay: "white",
+                      hint: "#0b1020",
+                    }}
+                  />
+                </View>
+              ) : (
+                <Text style={styles.teamText}>
+                  {team || "No team selected"}
+                </Text>
+              )}
 
+              
               <View style={styles.fieldBlock}>
                 <Text style={styles.label}>Date & Time</Text>
                 {isEditing ? (
@@ -226,6 +281,7 @@ export default function EventDetailModal({
                           <Text style={styles.inputPressableText}>{dateStr || "(Pick a date)"}</Text>
                         </Pressable>
                       </View>
+                      
                       <View style={styles.col}>
                         <Pressable onPress={() => setShowTime(true)} style={styles.inputPressable}>
                           <Text style={styles.inputPressableText}>{timeStr || "(Pick a time)"}</Text>
@@ -455,7 +511,12 @@ const styles = StyleSheet.create({
   badgeActive: { backgroundColor: "#DCF2F3" },
   badgeInactive: { backgroundColor: "#F3F4F6" },
   badgeText: { color: "#0e6367", fontWeight: "700" },
-
+  editTitle: {
+  fontSize: 14,
+  color: "black",   // subtle grey
+  marginBottom: 4,
+  fontWeight: "500",
+},
   fieldBlock: { marginBottom: 12 },
   label: { fontSize: 14, color: "#374151", marginBottom: 6, fontWeight: "600" },
 

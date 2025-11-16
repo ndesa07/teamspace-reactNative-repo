@@ -104,7 +104,6 @@ export default function Schedule()
   const role = Array.isArray(params.role) ? params.role[0] : params.role;
   const name = Array.isArray(params.name) ? params.name[0] : params.name;
   const playerId = Array.isArray(params.playerId) ? params.playerId[0] : params.playerId; // <-- use playerId
-
   const [weekDates, setweekDates] = useState([]);
   const [eventsByDay, setEventsByDay] = useState({});
   const [eventDetailModal, setEventDetailModal] = useState(false);
@@ -123,11 +122,52 @@ export default function Schedule()
   const baseHeightRef = useRef(WEEK_H);
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [user,setUser] = useState(null);
-  const [availabilityList,setAvailabilityList] = useState([])
+  const [availabilityList,setAvailabilityList] = useState([]);
+  const [teams,setTeams] = useState([]);
+  const [myTeamIds, setMyTeamIds] = useState([]);
 
+  async function getPlayerOnTeam()
+  {
+      {
+      try {
+        const response = await tablesDb.listRows(
+          "68cfc3d00013a224d25f",
+          "teamlists",
+          [
+            Query.equal("PlayerId", playerId)
+          ]
+        );
+        const rows = response.rows ?? response.documents ?? [];
+        const ids = rows.map(r => r.TeamId);
+        setMyTeamIds(ids);
+      } 
+      catch (e) 
+      {
+        console.warn('Failed to fetch teams', e);
+      }
+    }
+  }
+async function fetchTeams() {
+    try {
+      const response = await tablesDb.listRows(
+        "68cfc3d00013a224d25f",
+        "teams",
+        [
+          Query.equal("ClubName", clubName)
+        ]
+      );
+      setTeams(response.rows ?? response.documents ?? []);
+    } 
+    catch (e) 
+    {
+      console.warn('Failed to fetch teams', e);
+    }
+  }
   
 
-
+React.useEffect(() => {
+    fetchTeams();
+  }, []);
   const isAdmin = typeof role === "string" && role.toLowerCase() === "admin";
   const isCaptain = typeof role === "string" && role.toLowerCase() === "captain";
   const fetchAvailability = async (eventId, playerId) => {
@@ -192,6 +232,7 @@ async function loadEventDetails(evt) {
 
 
   useEffect(() => {
+    getPlayerOnTeam();
     if (!clubName || weekDates.length === 0) return;
     let cancelled = false;
 
@@ -255,7 +296,7 @@ async function loadEventDetails(evt) {
   }, [mode, loadEvents]);
   
   
-  const handleSubmit = async ({ EventName, EventBody, Date, Active,Time }) => {
+  const handleSubmit = async ({ EventName, EventBody, Date, Active,Time,EventType }) => {
     try {
       setSubmitting(true);
       if (!clubName?.trim()) {
@@ -279,6 +320,7 @@ async function loadEventDetails(evt) {
           Name: authorName,
           Date: String(Date).trim(),
           Time: String(Time).trim(),
+          EventType: EventType,
 
         }
       );
@@ -306,6 +348,13 @@ async function loadEventDetails(evt) {
   const onKnobDragStart = () => {
     baseHeightRef.current = mode === 'month' ? MONTH_H : WEEK_H;
   };
+const teamOptions = [
+  { label: "All teams", value: "ALL" },             // 👈 special value
+  ...teams.map(team => ({
+    label: team.Name,
+    value: team.$id,
+  })),
+];
 
   const onKnobDrag = (dy) => {
     calHeight.stopAnimation();
@@ -318,7 +367,21 @@ async function loadEventDetails(evt) {
     Animated.spring(calHeight, { toValue: target, useNativeDriver: false, bounciness: 0 }).start();
     setMode(nextIsMonth ? 'month' : 'week');
   };
+  const isAdminOrCaptain = isAdmin || isCaptain;
 
+
+  const canSeeEvent = (evt) => {
+  // Admins / captains see everything
+  if (isAdminOrCaptain) return true;
+
+  const eventTeam = evt.EventType;
+
+  // If event is for everyone:
+  if (!eventTeam || eventTeam === "ALL") return true;
+
+  // Players: only see events for their team(s)
+  return myTeamIds.includes(eventTeam);
+};
 
   return (
     <Layout
@@ -390,31 +453,38 @@ async function loadEventDetails(evt) {
           {weekDates.map((d) => {
             const key = ymd(d);
             const todays = eventsByDay[key] ?? [];
+            const visibleEvents = todays.filter(canSeeEvent);
+
             return (
               <View style={styles.inEventRow} key={d.toISOString()}>
                 <Text style={styles.eventList}>
-                  {getMonthName(d.getMonth())} {' '}{d.getDate()} {getDayOfWeek(d.getDay())}
+                  {getMonthName(d.getMonth())}{" "}
+                  {d.getDate()} {getDayOfWeek(d.getDay())}
                 </Text>
 
-                {todays.length === 0 ? (
+                {visibleEvents.length === 0 ? (
                   <View />
+                  // or: <Text style={styles.noEvents}>No events for your team</Text>
                 ) : (
                   <View style={styles.eventStack}>
-                    {todays.map((evt, idx) => (
+                    {visibleEvents.map((evt, idx) => (
                       <Pressable
                         key={evt.$id}
                         onPress={async () => {
-                        setSelectedEvent(evt);
-                        await fetchAvailability(evt.$id, /* your current playerId here */ playerId);
-                        setEventDetailModal(true)}}
+                          setSelectedEvent(evt);
+                          await fetchAvailability(evt.$id, playerId);
+                          setEventDetailModal(true);
+                        }}
                         style={({ pressed }) => [
                           styles.eventBox,
-                          idx !== todays.length - 1 && styles.eventBoxSpacer,
+                          idx !== visibleEvents.length - 1 && styles.eventBoxSpacer,
                           pressed && styles.eventBoxPressed,
                         ]}
                         android_ripple={{ color: colors.surface }}
                       >
-                        <Text style={styles.eventTitle}>{evt.EventName ?? 'Event'}</Text>
+                        <Text style={styles.eventTitle}>
+                          {evt.EventName ?? "Event"}
+                        </Text>
                       </Pressable>
                     ))}
                   </View>
@@ -431,6 +501,7 @@ async function loadEventDetails(evt) {
         onSubmit={handleSubmit}
         submitting={submitting}
         initialName={""}
+        options = {teamOptions}
       />
 
       <EventDetailModal
@@ -447,13 +518,15 @@ async function loadEventDetails(evt) {
         myAvailability={myAvailFromDB ?? null}
         availabilityList = {availabilityList}
         onSetAvailability={upsertAvailability}
+        initialTeamId={selectedEvent?.EventType ?? null}
+        options = {teamOptions}
         onRefreshAvailability={async () => {
               if (selectedEvent?.$id) {
                 await fetchAvailability(selectedEvent.$id, playerId);
               }
             }}
 
-        onUpdate={async ({ EventName, EventBody, Active, Date,Time }) => {
+        onUpdate={async ({ EventName, EventBody, Active, Date,Time,EventType }) => {
           try {
             setUpdatingDetail(true);
             await tablesDb.updateRow(
@@ -466,6 +539,7 @@ async function loadEventDetails(evt) {
                 Active: Active,
                 Date: String(Date).trim(),
                 Time: String(Time).trim(),
+                EventType: EventType,
               }
             );
             await loadEvents(selectedEvent.Date);
