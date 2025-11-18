@@ -9,6 +9,8 @@ import EditTeamModal from './Components/EditTeam';
 import { tablesDb, ID } from "../lib/appwrite";
 import { Query } from "react-native-appwrite"; 
 import { ActivityIndicator } from 'react-native';
+import { Alert } from "react-native";
+
 
 
 
@@ -18,6 +20,8 @@ export default function Teams() {
   const role = Array.isArray(params.role) ? params.role[0] : params.role;
   const name = Array.isArray(params.name) ? params.name[0] : params.name;
   const playerId = Array.isArray(params.playerId) ? params.playerId[0] : params.playerId;
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null); 
 
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [addTeamModalVisible, setAddTeamModalVisible] = useState(false);
@@ -40,6 +44,51 @@ export default function Teams() {
 }));
 const isAdmin = role === 'admin' || role === 'captain';
 const canEditTeam = isAdmin && selectedTeam;
+
+const handleUpdateDelete = () => {
+  Alert.alert(
+    "Delete team?",
+    "Are you sure you want to delete?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Continue",
+        style: "destructive",
+        onPress: async () => {
+          try
+        {
+
+          setEditTeamModalVisible(false);
+          tablesDb.deleteRow("68cfc3d00013a224d25f","teams",selectedTeam);
+          const rows = await tablesDb.listRows(
+            "68cfc3d00013a224d25f",
+            "teamlists",
+            [Query.equal("TeamId", selectedTeam)]
+          );
+
+          const deletePromises = rows.rows.map((row) =>
+            tablesDb.deleteRow(
+              "68cfc3d00013a224d25f",
+              "teamlists",
+              row.$id // or row.$id depending on your SDK
+            )
+          );
+
+          await Promise.all(deletePromises);
+          await fetchTeams();
+          setMatchPlayers([]);
+          setSelectedTeam(null);
+        }
+        catch (e) 
+        {
+          console.log(e?.message ?? String(e));
+            alert(e?.message ?? String(e));
+          }
+        },
+      },
+    ]
+  );
+};
 
 
 const removeMember = async (rowId) => {
@@ -283,6 +332,7 @@ const removeMember = async (rowId) => {
       playerOptions={playerOptions}
       teamId={selectedTeam}
       onClose={() => setEditTeamModalVisible(false)}
+      updateDelete={handleUpdateDelete}
       onSubmit={async ({ teamId, teamName, players, date }) => {
       try
       {

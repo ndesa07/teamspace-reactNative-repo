@@ -3,9 +3,11 @@ import {View,Text,Modal,TextInput, Pressable,StyleSheet,KeyboardAvoidingView,Tou
 import { colors, common } from '../styles/common';
 import Dropdown from './UniversalDropDownBar';
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { MaterialIcons } from "@expo/vector-icons";
 
 
-export default function EditTeamModal({ visible,teamName,teamId ,clubName,playerOptions, onClose, onSubmit }) 
+
+export default function EditTeamModal({ visible,teamName,teamId ,clubName,playerOptions, onClose, onSubmit,updateDelete }) 
 {
     const [selectedPlayers, setSelectedPlayers] = useState([]);
     const [playerValue, setPlayerValue] = useState(null);
@@ -64,6 +66,19 @@ export default function EditTeamModal({ visible,teamName,teamId ,clubName,player
                 placeholder="Enter team name"
                 placeholderTextColor={colors.muted}
               />
+               <Pressable
+                onPress={() => updateDelete()}
+                style = {[styles.deleteButton,{borderColor: colors.border,borderRadius: 10, borderWidth:2,alignItems: "center", marginTop: 2, marginBottom:10 }]}
+              >
+                <View style = {{flexDirection: "row",padding: 10,justifyContent: 'center', // Centers children horizontally in a row
+      alignItems: 'center',}}>
+                
+        
+                  <Text style={styles.delete}>Delete</Text>
+                  <MaterialIcons name="delete" size={18} color="red" />
+              
+                </View>
+               </Pressable>
 
               {/* 
               <Text style={styles.sectionLabel}>Match Date</Text>
@@ -133,6 +148,7 @@ export default function EditTeamModal({ visible,teamName,teamId ,clubName,player
                 <Text style={styles.actionText}>Save</Text>
                 </Pressable>
             </View>
+           
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -256,6 +272,12 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontSize: 16,
   },
-  
+  deleteButton: 
+  {
+    backgroundColor: colors.surfaceAlt,
+    
+  },
+  delete: { color: "red", fontWeight: "900", fontSize: 16 },
+
 
 });
