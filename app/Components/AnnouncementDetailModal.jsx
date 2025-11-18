@@ -60,11 +60,9 @@ export default function AnnouncementDetailModal({
   return (
    
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-
         <View style={styles.card}>
+            <ScrollView >
           <Text style={styles.heading}>{heading}</Text>
 
           {/* Title + Active badge or editor */}
@@ -125,12 +123,10 @@ export default function AnnouncementDetailModal({
             </View>
           ) : (
             <View style={styles.bodyBox}>
-              <ScrollView style={styles.bodyScroll} contentContainerStyle={{ paddingBottom: 8 }}>
                 <Text style={styles.body}>{initialBody}</Text>
-              </ScrollView>
             </View>
           )}
-
+          </ScrollView>
           {/* Actions */}
           <View style={styles.actions}>
             {!isEditing ? (
@@ -183,8 +179,7 @@ export default function AnnouncementDetailModal({
             )}
           </View>
         </View>
-      </View>
-      </TouchableWithoutFeedback>
+      </View>      
     </Modal>
     
   );
@@ -192,7 +187,16 @@ export default function AnnouncementDetailModal({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center", padding: 16 },
-  card: { width: "100%", maxWidth: 560, maxHeight: "80%", borderRadius: 16, backgroundColor: "#fff", padding: 16 },
+  card: {
+  width: "100%",
+  maxWidth: 560,
+  maxHeight: "60%",          // 🔹 key change – give it actual height
+  borderRadius: 12,
+  backgroundColor: "#fff",
+  overflow: "hidden",
+  flexDirection: "column",
+  padding: 16,
+},
   heading: { fontSize: 16, fontWeight: "700", marginBottom: 6, color: "#0e6367" },
 
   titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
@@ -216,8 +220,15 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   switchLabel: { fontSize: 16, color: "#111827", fontWeight: "600" },
 
-  bodyBox: { borderWidth: 1, borderColor: "#0e6367", borderRadius: 12, padding: 12, marginTop: 4, backgroundColor: "#fff" },
-  bodyScroll: { maxHeight: 320 },
+  bodyBox: 
+  { 
+    borderWidth: 1, 
+    borderColor: "#0e6367", 
+    borderRadius: 12, 
+    padding: 12, marginTop: 4, 
+    backgroundColor: "#fff", 
+     },
+  bodyScroll: { flex:1 },
   body: { color: "#111827", lineHeight: 22 },
   bodyInput: {
     minHeight: 160,

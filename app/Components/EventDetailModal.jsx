@@ -210,11 +210,14 @@ export default function EventDetailModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}  disabled={!(isEditing)} accessible={false}>
         <View style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-          <View style={styles.card}>
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <View style={styles.card} >
+            <View style={{ flex: 1 }}>
+             <ScrollView style={styles.scroll} 
+             contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled" 
+             nestedScrollEnabled>
 
               {!!error && (
                 <View style={styles.errorBox}>
@@ -273,7 +276,7 @@ export default function EventDetailModal({
                 </View>
               ) : (
                 <Text style={styles.teamText}>
-                  {team || "No team selected"}
+                  {team}
                 </Text>
               )}
 
@@ -339,46 +342,7 @@ export default function EventDetailModal({
                   </View>
                 )}
               </View>
-
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Details</Text>
-                {isEditing ? (
-                  <TextInput
-                    value={body}
-                    onChangeText={setBody}
-                    multiline
-                    placeholder="Add event details…"
-                    placeholderTextColor="#9CA3AF"
-                    style={styles.textarea}
-                  />
-                ) : (
-                  <View style={styles.bodyBox}>
-                    <ScrollView style={styles.bodyScroll} contentContainerStyle={{ paddingBottom: 8 }}>
-                      <Text style={styles.bodyText}>{initialBody || "(No details)"}</Text>
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-              {/* 
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Event Active</Text>
-                {isEditing ? (
-                  <Pressable
-                    onPress={() => setActive(!active)}
-                    style={[styles.toggle, active ? styles.toggleOn : styles.toggleOff]}
-                  >
-                    <View style={[styles.toggleThumb, active ? styles.toggleThumbOn : styles.toggleThumbOff]} />
-                  </Pressable>
-                ) : (
-                  <View style={[styles.badge, initialActive ? styles.badgeActive : styles.badgeInactive]}>
-                    <Text style={styles.badgeText}>{initialActive ? "Active" : "Inactive"}</Text>
-                  </View>
-                )}
-              </View>
-              */}
-            {/* ===== NEW: AVAILABILITY SECTION ===== */}
-
-          {/* Player self-mark availability (always visible to non-admins; admins can ignore) */}
+              {/* Player self-mark availability (always visible to non-admins; admins can ignore) */}
           { (
             <View style={styles.availBlock}>
                 <Text style={styles.label}>My Availability</Text>
@@ -414,34 +378,82 @@ export default function EventDetailModal({
               >
                 <Text style={styles.btnTextPrimary}>{savingAvail ? 'Saving…' : 'Save Availability'}</Text>
               </Pressable>
-            </View>
-          )}
 
-          {/* Admin list of available players */}
-          {canEdit && (
-            <View style={styles.availListBlock}>
-              <Text style={styles.label}>Available Players ({availablePlayers.length})</Text>
-              <View style={styles.availListBox}>
-                <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="handled">
-                  {availablePlayers.length === 0 ? (
-                    <Text style={styles.emptyAvailText}>No players have marked themselves available yet.</Text>
-                  ) : (
-                    availablePlayers.map((p) => (
-                      <View key={p.playerId} style={styles.availItemRow}>
-                        <Text style={styles.availName}>{p.playerName}</Text>
-                        <View style={[styles.badge, styles.badgeActive]}>
-                          <Text style={styles.badgeText}>Available</Text>
-                        </View>
-                      </View>
-                    ))
-                  )}
-                </ScrollView>
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Details</Text>
+                {isEditing ? (
+                  <TextInput
+                    value={body}
+                    onChangeText={setBody}
+                    multiline
+                    placeholder="Add event details…"
+                    placeholderTextColor="#9CA3AF"
+                    style={styles.textarea}
+                  />
+                ) : (
+                  <View style={styles.bodyBox}>
+                    <Text style={styles.bodyText}>
+                      {initialBody || "(No details)"}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           )}
+              
+              {/* 
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Event Active</Text>
+                {isEditing ? (
+                  <Pressable
+                    onPress={() => setActive(!active)}
+                    style={[styles.toggle, active ? styles.toggleOn : styles.toggleOff]}
+                  >
+                    <View style={[styles.toggleThumb, active ? styles.toggleThumbOn : styles.toggleThumbOff]} />
+                  </Pressable>
+                ) : (
+                  <View style={[styles.badge, initialActive ? styles.badgeActive : styles.badgeInactive]}>
+                    <Text style={styles.badgeText}>{initialActive ? "Active" : "Inactive"}</Text>
+                  </View>
+                )}
+              </View>
+              */}
+            {/* ===== NEW: AVAILABILITY SECTION ===== */}
 
-          {/* ===== END AVAILABILITY SECTION ===== */}
+          <View>
+            <Text style={styles.label}>
+              Available Players ({availablePlayers.length})
+            </Text>
+          </View>
+          {/* Admin list of available players */}
+          {canEdit && (
+           
+            <View style={styles.availListBox}>
+               <ScrollView>
+              {availablePlayers.length === 0 ? (
+                <Text style={styles.emptyAvailText}>
+                  No players have marked themselves available yet.
+                </Text>
+              ) : (
+                availablePlayers.map((p) => (
+                  <View key={p.playerId} style={styles.availItemRow}>
+                    <Text style={styles.availName}>{p.playerName}</Text>
+                    <View style={[styles.badge, styles.badgeActive]}>
+                      <Text style={styles.badgeText}>Available</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+              </ScrollView>
+            </View>
+            
+            )}
+            
+
         </ScrollView>
+        </View>
+        {/* ===== END AVAILABILITY SECTION ===== */}
 
             <View style={styles.footer}>
               {!isEditing ? (
@@ -507,9 +519,23 @@ export default function EventDetailModal({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 16 },
-  card: { width: "100%", maxWidth: 560, maxHeight: "85%", borderRadius: 12, backgroundColor: "#fff", overflow: "hidden" },
-  scroll: { flexGrow: 0 },
-  scrollContent: { padding: 16 },
+  card: {
+  width: "100%",
+  maxWidth: 560,
+  height: "80%",          // 🔹 key change – give it actual height
+  borderRadius: 12,
+  backgroundColor: "#fff",
+  overflow: "hidden",
+  flexDirection: "column",
+},
+
+  scroll: {
+  flex: 1,
+},
+scrollContent: {
+  padding: 16,
+  paddingBottom: 24,   // room above the footer
+},
 
   heading: { fontSize: 20, fontWeight: "800", color: "#1f2937", marginBottom: 12 },
 
@@ -537,7 +563,7 @@ const styles = StyleSheet.create({
   marginBottom: 4,
   fontWeight: "500",
 },
-  fieldBlock: { marginBottom: 12 },
+  fieldBlock: { marginBottom: 20, marginTop: "-3%" },
   label: { fontSize: 14, color: "#374151", marginBottom: 6, fontWeight: "600" },
 
   row: { flexDirection: "row", gap: 12 },
@@ -558,8 +584,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 10, textAlignVertical: "top", color: "#111827",
   },
 
-  bodyBox: { borderWidth: 1, borderColor: "#0e6367", borderRadius: 12, padding: 12, backgroundColor: "#fff" },
-  bodyScroll: { maxHeight: 320 },
+  bodyBox: {
+  borderWidth: 1,
+  borderColor: "#0e6367",
+  borderRadius: 12,
+  padding: 12,
+  backgroundColor: "#fff",
+},
+  bodyScroll: {flex: 1 },
   bodyText: { color: "#111827", lineHeight: 22 },
 
   toggleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4, marginBottom: 8 },
@@ -585,7 +617,7 @@ const styles = StyleSheet.create({
   backgroundColor: "#f9fafb",
   borderColor: "#e5e7eb",
 },
-availBlock: { marginTop: 6, marginBottom: 10 },
+availBlock: { marginTop: 6 },
 availButtonsRow: { flexDirection: 'row', gap: 8 },
 avBtn: {
   flex: 1,
@@ -610,6 +642,7 @@ availListBox: {
   borderRadius: 10,
   backgroundColor: '#f9fafb',
   padding: 8,
+  height: 200,
 },
 availItemRow: {
   flexDirection: 'row',
