@@ -143,7 +143,7 @@ export default function Schedule()
       } 
       catch (e) 
       {
-        console.warn('Failed to fetch teams', e);
+        console.warn('Failed to fetch teams in player on team', e);
       }
     }
   }
@@ -160,7 +160,7 @@ async function fetchTeams() {
     } 
     catch (e) 
     {
-      console.warn('Failed to fetch teams', e);
+      console.warn('Failed to fetch teams in fetch teams only', e);
     }
   }
   

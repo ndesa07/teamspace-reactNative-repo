@@ -12,6 +12,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  KeyboardAvoidingView,
+  Button
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import SelectBar from "./SelectBar";
@@ -55,6 +57,8 @@ export default function EventModal({
   const [showTime, setShowTime] = useState(false);
   const [error, setError] = useState("");
   const [team, setTeam] = useState(initialTeamId || "");
+  const [tempDate, setTempDate] = useState(null);
+
 
 
   useEffect(() => {
@@ -72,7 +76,12 @@ export default function EventModal({
       setTeam(initialTeamId || "");
     }
   }, [visible, initialEventName, initialBody, initialActive, initialName, initialTeamId]);
-
+    const handleConfirmDate = () => {
+      setShowDate(false);   // closes the date picker
+    };
+    const handleConfirmTime = () => {
+  setShowTime(false);   // closes the date picker
+};
   const onChangeDate = (_e, selected) => {
     setShowDate(false);
     if (selected) {
@@ -119,7 +128,11 @@ export default function EventModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={styles.backdrop}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0} 
+        >
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
           <View style={styles.card}>
             <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -132,13 +145,14 @@ export default function EventModal({
               )}
 
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Event Name</Text>
+                <Text style={styles.label}>Event Name *Max 20 Characters*</Text>
                 <TextInput
                   value={eventName}
                   onChangeText={setEventName}
                   placeholder="Enter event name"
                   placeholderTextColor="#9CA3AF"
                   style={styles.input}
+                  maxLength={25}   
                 />
               </View>
               <View style ={{margin: 1, marginBottom: 20}}>
@@ -159,37 +173,54 @@ export default function EventModal({
 
                 
               </View>
+              
 
               <View style={styles.row}>
                 <View style={styles.col}>
                   <Text style={styles.label}>Date</Text>
-                  <Pressable onPress={() => setShowDate(true)} style={styles.inputPressable}>
+                  <Pressable onPress={() => setShowDate(prev => !prev)} style={styles.inputPressable}>
                     <Text style={styles.inputPressableText}>{dateStr}</Text>
                   </Pressable>
                 </View>
                 <View style={styles.col}>
                   <Text style={styles.label}>Time</Text>
-                  <Pressable onPress={() => setShowTime(true)} style={styles.inputPressable}>
+                  <Pressable onPress={() => setShowTime(prev => !prev)} style={styles.inputPressable}>
                     <Text style={styles.inputPressableText}>{timeStr}</Text>
                   </Pressable>
                 </View>
               </View>
-
+              
+              
+              
               {showDate && (
-                <DateTimePicker
-                  mode="date"
-                  value={pickerDate}
-                  onChange={onChangeDate}
-                  display={Platform.OS === "ios" ? "inline" : "calendar"}
-                />
+                <>
+                    
+                  <DateTimePicker
+                      mode="date"
+                      value={pickerDate}
+                      onChange={onChangeDate}
+                      display={Platform.OS === "ios" ? "inline" : "calendar"}
+                    />
+                    <Pressable onPress={handleConfirmDate} style={styles.closePickerBtn}>
+                <Text style={styles.btnTextPrimary}>Close Date Picker</Text>
+              </Pressable>
+                </>
+                
+                
               )}
               {showTime && (
-                <DateTimePicker
-                  mode="time"
-                  value={pickerDate}
-                  onChange={onChangeTime}
-                  display={Platform.OS === "ios" ? "spinner" : "clock"}
-                />
+                <>
+                    <DateTimePicker
+                      mode="time"
+                      value={pickerDate}
+                      onChange={onChangeTime}
+                      display={Platform.OS === "ios" ? "spinner" : "clock"}
+                    />
+                    <Pressable onPress={handleConfirmTime} style={styles.closePickerBtn}>
+                    <Text style={styles.btnTextPrimary}>Close Date Picker</Text>
+                  </Pressable>
+              </>
+              
               )}
 
               <View style={styles.fieldBlock}>
@@ -203,7 +234,7 @@ export default function EventModal({
                   style={styles.textarea}
                 />
               </View>
-
+              {/*
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>Event Active</Text>
                 <Pressable
@@ -213,6 +244,7 @@ export default function EventModal({
                   <View style={[styles.toggleThumb, isActive ? styles.toggleThumbOn : styles.toggleThumbOff]} />
                 </Pressable>
               </View>
+              */}
             </ScrollView>
 
             <View style={styles.footer}>
@@ -224,7 +256,7 @@ export default function EventModal({
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -232,7 +264,7 @@ export default function EventModal({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 16 },
-  card: { width: "100%", maxWidth: 560, maxHeight: "85%", borderRadius: 12, backgroundColor: "#fff", overflow: "hidden" },
+  card: { marginTop: "40%", width: "100%", maxWidth: 560, maxHeight: "90%", borderRadius: 12, backgroundColor: "#fff", overflow: "hidden" },
   scroll: { flexGrow: 0 },
   scrollContent: { padding: 16 },
   heading: { fontSize: 20, fontWeight: "800", color: "#1f2937", marginBottom: 12 },
@@ -276,4 +308,19 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   btnTextPrimary: { color: "#fff", fontWeight: "700" },
   btnTextSecondary: { color: "#374151", fontWeight: "700" },
+  closePickerBtn: {
+  backgroundColor: "#0e6367",
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: 10,
+  marginBottom: 10,
+},
+closePickerBtnText: {
+  color: "#fff",
+  fontWeight: "700",
+  fontSize: 16,
+},
 });

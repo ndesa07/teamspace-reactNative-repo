@@ -77,6 +77,7 @@ export default function Login()
               placeholder="you@domain.com"
               placeholderTextColor={colors.muted}
               returnKeyType="next"
+              maxLength ={254}
             />
 
             <Text style={styles.label}>Password</Text>
@@ -90,6 +91,7 @@ export default function Login()
               placeholderTextColor={colors.muted}
               returnKeyType="done"
               onSubmitEditing={onSubmit}
+              maxLength ={254}
             />
 
             {/* Actions */}

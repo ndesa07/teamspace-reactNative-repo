@@ -77,6 +77,12 @@ export default function EventDetailModal({
     () => options.find(o => o.value === teamId)?.label ?? "",
     [options, teamId]
   );
+  const handleConfirmDate = () => {
+      setShowDate(false);   // closes the date picker
+    };
+    const handleConfirmTime = () => {
+  setShowTime(false);   // closes the date picker
+};
  useEffect(() => {
       if (visible) {
         setMyAvail(
@@ -229,6 +235,7 @@ export default function EventDetailModal({
                       placeholder="Event name"
                       placeholderTextColor="#9CA3AF"
                       style={styles.titleInput}
+                      maxLength={25}   
                     />
                   ) : (
                     <Text style={styles.title}>
@@ -280,6 +287,7 @@ export default function EventDetailModal({
                         <Pressable onPress={() => setShowDate(true)} style={styles.inputPressable}>
                           <Text style={styles.inputPressableText}>{dateStr || "(Pick a date)"}</Text>
                         </Pressable>
+                        
                       </View>
                       
                       <View style={styles.col}>
@@ -287,22 +295,33 @@ export default function EventDetailModal({
                           <Text style={styles.inputPressableText}>{timeStr || "(Pick a time)"}</Text>
                         </Pressable>
                       </View>
+
                     </View>
                     {showDate && (
+                      <> 
                       <DateTimePicker
                         mode="date"
                         value={pickerDate}
                         onChange={handlePickDate}
                         display={Platform.OS === "ios" ? "inline" : "calendar"}
                       />
+                      <Pressable onPress={handleConfirmDate} style={styles.closePickerBtn}>
+                          <Text style={styles.btnTextPrimary}>Close Date Picker</Text>
+                      </Pressable>
+                      </>
                     )}
                     {showTime && (
+                      <>
                       <DateTimePicker
                         mode="time"
                         value={pickerDate}
                         onChange={handlePickTime}
                         display={Platform.OS === "ios" ? "spinner" : "clock"}
                       />
+                      <Pressable onPress={handleConfirmTime} style={styles.closePickerBtn}>
+                        <Text style={styles.btnTextPrimary}>Close Date Picker</Text>
+                      </Pressable>
+                      </>
                     )}
                   </>
                 ) : (
@@ -340,7 +359,7 @@ export default function EventDetailModal({
                   </View>
                 )}
               </View>
-
+              {/* 
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>Event Active</Text>
                 {isEditing ? (
@@ -356,6 +375,7 @@ export default function EventDetailModal({
                   </View>
                 )}
               </View>
+              */}
             {/* ===== NEW: AVAILABILITY SECTION ===== */}
 
           {/* Player self-mark availability (always visible to non-admins; admins can ignore) */}
@@ -601,5 +621,20 @@ availItemRow: {
 },
 availName: { flex: 1, color: '#111827', fontSize: 16 },
 emptyAvailText: { color: '#6b7280', paddingVertical: 6 },
+closePickerBtn: {
+  backgroundColor: "#0e6367",
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: 10,
+  marginBottom: 10,
+},
+closePickerBtnText: {
+  color: "#fff",
+  fontWeight: "700",
+  fontSize: 16,
+},
 
 });

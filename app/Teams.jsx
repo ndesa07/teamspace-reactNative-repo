@@ -17,6 +17,7 @@ export default function Teams() {
   const clubName = Array.isArray(params.clubName) ? params.clubName[0] : params.clubName;
   const role = Array.isArray(params.role) ? params.role[0] : params.role;
   const name = Array.isArray(params.name) ? params.name[0] : params.name;
+  const playerId = Array.isArray(params.playerId) ? params.playerId[0] : params.playerId;
 
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [addTeamModalVisible, setAddTeamModalVisible] = useState(false);
@@ -124,10 +125,10 @@ const removeMember = async (rowId) => {
       showFooter={true}
       headerExtras
       onPressSchedule={() =>
-        router.push({ pathname: '/Schedule', params: { clubName, role, name } })
+        router.push({ pathname: '/Schedule', params: { clubName, role, name, playerId } })
       }
       onPressTeams={() =>
-        router.push({ pathname: '/Teams', params: { clubName, role, name } })
+        router.push({ pathname: '/Teams', params: { clubName, role, name, playerId } })
       }
     >
       <View style={{ flex: 1, padding: 16, justifyContent: 'start', marginTop: -30 }}>
@@ -252,7 +253,6 @@ const removeMember = async (rowId) => {
         
       </View>
 
-      <View style={{ borderWidth: 1, borderColor: colors.border, width: "100%", marginBottom: 10 }} />
 
       <AddTeamModal
         visible={addTeamModalVisible}

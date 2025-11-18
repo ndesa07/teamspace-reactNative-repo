@@ -32,6 +32,8 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [sortCode, setSortCode] = useState("");
+  const [captainSortCode, setCaptainSortCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [clubs, setClubs] = useState([]);
   const [clubsLoading, setClubsLoading] = useState(false);
@@ -96,34 +98,34 @@ export default function SignUp() {
       alive = false;
     };
   }, [needsClubSelect]);
-
   const onSubmit = async () => {
+    setIsSubmitting(true);
     try {
       try {
         await account.deleteSession?.("current");
       } catch {}
 
-      const newUser = await account.create(
+      
+
+      if (isAdmin) {
+        const newSortCode = ID.unique();
+        setSortCode(newSortCode);
+        const newCaptainSortCode = ID.unique();
+        setCaptainSortCode(newCaptainSortCode);
+
+
+        await tablesDb.createRow("68cfc3d00013a224d25f", "clubtable", ID.unique(), {
+          clubName,
+          SortCode: newSortCode,
+          SortCodeCaptain: newCaptainSortCode,
+        });
+
+        const newUser = await account.create(
         ID.unique(),
         email.trim(),
         password,
         `${firstName} ${lastName}`
       );
-
-      if (account.createEmailPasswordSession) {
-        await account.createEmailPasswordSession(email.trim(), password);
-      } else {
-        await account.createEmailSession(email.trim(), password);
-      }
-
-      if (isAdmin) {
-        const newSortCode = ID.unique();
-        setSortCode(newSortCode);
-
-        await tablesDb.createRow("68cfc3d00013a224d25f", "clubtable", ID.unique(), {
-          clubName,
-          SortCode: newSortCode,
-        });
 
         await tablesDb.createRow("68cfc3d00013a224d25f", "name", newUser.$id, {
           clubName,
@@ -138,21 +140,55 @@ export default function SignUp() {
           name: `${firstName} ${lastName}`,
           clubName,
           sortCode: newSortCode,
+          SortCodeCaptain: newCaptainSortCode 
         });
-      } else {
-        const res = await tablesDb.listRows("68cfc3d00013a224d25f", "clubtable", [
-          Query.equal("SortCode", [sortCode]),
+      } 
+      else 
+        {
+        const trimmedCode = sortCode.trim();
+
+        const captainRes = await tablesDb.listRows("68cfc3d00013a224d25f", "clubtable", [
+          Query.equal("SortCodeCaptain", [trimmedCode]),
           Query.limit(1),
         ]);
+        const captainRow = captainRes.rows?.[0] || captainRes.documents?.[0] || null;
 
-        const row = res.rows?.[0] || res.documents?.[0] || null;
+        let clubRow = null;
+        let inferredRole = role; // whatever was selected in UI by default
 
-        if (!row) {
+        if (captainRow) {
+          // Match found in SortCodeCaptain → this user is a captain
+          clubRow = captainRow;
+
+        }
+        else 
+        {
+          const re = await tablesDb.listRows(
+        "68cfc3d00013a224d25f",        // DB ID
+        "clubtable",                   // table ID
+        [
+          Query.equal("SortCode", [trimmedCode]),   // 👈 search in SortCodeCaptain
+          Query.limit(1),
+        ]
+      );
+            const row1 = re.rows?.[0] || re.documents?.[0] || null;
+            if (row1) 
+              {
+                clubRow = row1;
+              }
+        }
+        if (!clubRow) {
           console.warn("No club found for that sort code");
+          alert("No club found for that sort code");
           return;
         }
-
-        const cname = row.clubName || row.data?.clubName;
+        const newUser = await account.create(
+        ID.unique(),
+        email.trim(),
+        password,
+        `${firstName} ${lastName}`
+      );
+        const cname = clubRow.clubName || clubRow.data?.clubName;
 
         await tablesDb.createRow("68cfc3d00013a224d25f", "name", newUser.$id, {
           clubName: cname,
@@ -161,13 +197,25 @@ export default function SignUp() {
           role,
           email: email.trim(),
         });
-      }
 
+
+        
+
+      if (account.createEmailPasswordSession) {
+        await account.createEmailPasswordSession(email.trim(), password);
+      } else {
+        await account.createEmailSession(email.trim(), password);
+      }
+      }
+      
       router.replace("/home");
     } catch (e) {
       console.warn("Sign up failed:", e);
       alert(e?.message ?? String(e));
     }
+    finally {
+    setIsSubmitting(false); // optional: or keep true if the screen navigates
+  }
   };
 
   if (!role) {
@@ -245,6 +293,7 @@ export default function SignUp() {
                   onChangeText={setClubName}
                   placeholder="e.g., UNSW Cricket Club"
                   placeholderTextColor={colors.muted}
+                  maxLength ={254}
                 />
               </>
             )}
@@ -256,9 +305,9 @@ export default function SignUp() {
                   style={styles.input}
                   value={sortCode}
                   onChangeText={setSortCode}
-                  keyboardType="numeric"
                   placeholder="Enter Sort Code To Join A Team"
                   placeholderTextColor={colors.muted}
+                  maxLength ={254}
                 />
               </>
             )}
@@ -270,6 +319,7 @@ export default function SignUp() {
               onChangeText={setFirst}
               placeholder="First name"
               placeholderTextColor={colors.muted}
+              maxLength ={254}
             />
 
             <Text style={styles.label}>Last Name</Text>
@@ -279,6 +329,7 @@ export default function SignUp() {
               onChangeText={setLast}
               placeholder="Last name"
               placeholderTextColor={colors.muted}
+              maxLength ={254}
             />
 
             <Text style={styles.label}>Email</Text>
@@ -290,6 +341,7 @@ export default function SignUp() {
               keyboardType="email-address"
               placeholder="you@domain.com"
               placeholderTextColor={colors.muted}
+              maxLength ={254}
             />
 
             <Text style={styles.label}>Password</Text>
@@ -300,6 +352,7 @@ export default function SignUp() {
               secureTextEntry
               placeholder="••••••••"
               placeholderTextColor={colors.muted}
+              maxLength ={254}
             />
 
             <Text style={styles.label}>Confirm Password</Text>
@@ -327,7 +380,7 @@ export default function SignUp() {
                 />
               </View>
               <View style={styles.buttonOutline}>
-                <Button title="Create Account" onPress={onSubmit} disabled={!isValid} />
+                <Button title="Create Account" onPress={onSubmit} disabled={!isValid || isSubmitting}  />
               </View>
             </View>
 
