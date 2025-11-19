@@ -72,13 +72,16 @@ export default function Login()
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoCorrect={false}
               keyboardType="email-address"
-              textContentType="emailAddress"
+              textContentType="username"      // 👈 change this
+              autoComplete="email"            // 👈 add this
               placeholder="you@domain.com"
               placeholderTextColor={colors.muted}
               returnKeyType="next"
-              maxLength ={254}
+              maxLength={254}
             />
+
 
             <Text style={styles.label}>Password</Text>
             <TextInput
@@ -88,6 +91,7 @@ export default function Login()
               secureTextEntry
               textContentType="password"
               placeholder="••••••••"
+              autoComplete="password" 
               placeholderTextColor={colors.muted}
               returnKeyType="done"
               onSubmitEditing={onSubmit}

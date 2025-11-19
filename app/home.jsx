@@ -169,7 +169,7 @@ export default function Home() {
       onPressTeams={() => 
         router.push({ pathname: '/Teams', params: { clubName,role , name: `${firstName} ${lastName}` ,playerId}})
       }
-      onPressProfile={() => {}}
+      onPressProfile={() => router.push({ pathname: '/Profile', params: { clubName,role , name: `${firstName} ${lastName}` ,playerId}})}
     >
       <ScrollView style={common.scrollView} contentContainerStyle={{ padding: 16 }}>
         
