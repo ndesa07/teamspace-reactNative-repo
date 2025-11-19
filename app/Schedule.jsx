@@ -390,8 +390,11 @@ const teamOptions = [
       onPressSchedule={() =>
         router.push({ pathname: '/Schedule', params: { clubName,role,name,playerId } })}
       onPressTeams={() =>
-        router.push({ pathname: '/Teams' , params: { clubName,role,name,playerId }})}
+        router.push({ pathname: '/Teams' , params: { clubName,role,name,playerId } } ) }
+      onPressProfile={() =>
+        router.push({ pathname: '/Profile' , params: { clubName,role,name,playerId }})}
     >
+      
       <View style={styles.hideOverflow}>
       <Animated.View style={{ height: calHeight, overflow: 'hidden' }}>
         <Calendar

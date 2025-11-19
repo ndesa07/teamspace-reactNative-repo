@@ -177,8 +177,17 @@ const removeMember = async (rowId) => {
         router.push({ pathname: '/Schedule', params: { clubName, role, name, playerId } })
       }
       onPressTeams={() =>
+      {
         router.push({ pathname: '/Teams', params: { clubName, role, name, playerId } })
       }
+        
+        
+      }
+      onPressProfile={() =>
+      {
+        router.push({ pathname: '/Profile' , params: { clubName,role,name,playerId }})}   
+      }
+        
     >
       <View style={{ flex: 1, padding: 16, justifyContent: 'start', marginTop: -30 }}>
         <SelectBar
