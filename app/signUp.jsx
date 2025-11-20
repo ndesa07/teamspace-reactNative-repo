@@ -34,6 +34,7 @@ export default function SignUp() {
   const [sortCode, setSortCode] = useState("");
   const [captainSortCode, setCaptainSortCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [playerId, setPlayerId] = useState(null);
 
   const [clubs, setClubs] = useState([]);
   const [clubsLoading, setClubsLoading] = useState(false);
@@ -102,9 +103,10 @@ export default function SignUp() {
     setIsSubmitting(true);
     try {
       try {
+        
         await account.deleteSession?.("current");
       } catch {}
-
+      let newUser;
       
 
       if (isAdmin) {
@@ -182,7 +184,8 @@ export default function SignUp() {
           alert("No club found for that sort code");
           return;
         }
-        const newUser = await account.create(
+        
+        newUser = await account.create(
         ID.unique(),
         email.trim(),
         password,
@@ -199,6 +202,7 @@ export default function SignUp() {
         });
 
 
+
         
 
       if (account.createEmailPasswordSession) {
@@ -212,7 +216,7 @@ export default function SignUp() {
     );
       router.replace({
         pathname: "/VerifyEmail",
-        params: { email },
+        params: { email, playerId: newUser.$id,password},
       });
       
       

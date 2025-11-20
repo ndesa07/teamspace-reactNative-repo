@@ -16,6 +16,7 @@ export default function Profile()
     const [firstName, setFirst] = useState("");
     const [lastName, setLast] = useState("");
     const [email, setEmail] = useState("");
+    const [originalEmail, setOriginalEmail] =  useState("");
     const [role,setRole] = useState(Array.isArray(params.role) ? params.role[0] : params.role);  
     const [teams,setTeams] = useState([]);
     const [players,setPlayers] = useState([]);
@@ -45,7 +46,6 @@ export default function Profile()
 
         const first = parts[0] || "";
         const last = parts.slice(1).join(" ") || ""; // supports middle names
-        console.log(name);
         setFirst(first);
         setLast(last);
     }
@@ -55,6 +55,7 @@ export default function Profile()
         {
             const user = await account.get();
             setEmail(user.email);
+            setOriginalEmail(user.email);
 
         } 
         catch (err) {
@@ -85,6 +86,27 @@ export default function Profile()
             console.error("Error in getTeamsByPlayer:", err);
         }
         
+    }
+        async function getPlayerName() {
+    try {
+        const row = await tablesDb.getRow("68cfc3d00013a224d25f", "name", playerId);
+
+        // Extract names (supporting both Appwrite formats)
+        const first = row.firstName || row.data?.firstName || "";
+        const last = row.lastName || row.data?.lastName || "";
+        setFirst(first);
+        setLast(last);
+
+        // Update your state here directly
+        setInitialValues((prev) => ({
+        ...prev,
+        firstName: first,
+        lastName: last,
+        }));
+
+    } catch (err) {
+        console.log("Error fetching player name:", err);
+    }
     }
     async function getPlayersInClub()
     {
@@ -128,9 +150,9 @@ export default function Profile()
 
         try {
             // update the auth email using the password provided
-
+             const user = await account.get();
             // 1) Only update auth email if user actually touched it AND changed it
-            if (touched.email && email !== originalEmail) {
+            if (touched.email && email !== user.email) {
             await account.updateEmail(email, password);
             }
 
@@ -154,6 +176,7 @@ export default function Profile()
             );
 
             console.log("Email & profile updated successfully!");
+            Alert.alert("Profile Updated Succesfully!");
         } catch (err) {
             console.log("Error here",err)
             Alert.alert("Error", "Incorrect password or update failed.");
@@ -168,6 +191,7 @@ export default function Profile()
     useEffect(() => 
         {
             populateNameFromParams();
+            getPlayerName();
             getUser();
             getTeamsByPlayer();
             getPlayersInClub();
@@ -183,13 +207,13 @@ export default function Profile()
         title="Profile"
         headerExtras 
         onPressSchedule={() =>
-        router.push({ pathname: '/Schedule', params: { clubName,role,name,playerId } })}
+        router.push({ pathname: '/Schedule', params: { clubName,role,name: `${initialValues.firstName} ${initialValues.lastName}`.trim(),playerId } })}
         onPressTeams={() =>
-        router.push({ pathname: '/Teams' , params: { clubName,role,name,playerId }})}
+        router.push({ pathname: '/Teams' , params: { clubName,role,name: `${initialValues.firstName} ${initialValues.lastName}`.trim(),playerId }})}
         onPressProfile={() => {
         router.push({
             pathname: '/Profile',
-            params: { clubName, role, name, playerId }
+            params: { clubName, role, name: `${initialValues.firstName} ${initialValues.lastName}`.trim(), playerId }
         });
         }}
     >
@@ -203,9 +227,11 @@ export default function Profile()
                 placeholder="First name"
                 value={firstName}
                 
-                onChangeText={(text) => {
+                onChangeText={(text) => 
+                    {
                     setTouched((prev) => ({ ...prev, firstName: true }));
-                    setFirst(text)}}
+                    setFirst(text)}
+                }
                 
                 placeholderTextColor={colors.muted}
             />

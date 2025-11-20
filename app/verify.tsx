@@ -9,7 +9,7 @@ export default function VerifyScreen() {
   useEffect(() => {
     // After a short delay, send them to login or home
     const timeout = setTimeout(() => {
-      router.replace("/(auth)/login"); // or wherever your login/home screen is
+      router.replace("/VerifyEmail"); // or wherever your login/home screen is
     }, 1500);
 
     return () => clearTimeout(timeout);
