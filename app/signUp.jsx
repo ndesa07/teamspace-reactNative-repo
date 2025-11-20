@@ -207,8 +207,15 @@ export default function SignUp() {
         await account.createEmailSession(email.trim(), password);
       }
       }
+      await account.createVerification(
+      "https://magic-portfolio-personal-projects-teamspace.appwrite.network/"
+    );
+      router.replace({
+        pathname: "/VerifyEmail",
+        params: { email },
+      });
       
-      router.replace("/home");
+      
     } catch (e) {
       console.warn("Sign up failed:", e);
       alert(e?.message ?? String(e));
