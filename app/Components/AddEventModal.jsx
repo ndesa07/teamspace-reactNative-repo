@@ -159,7 +159,7 @@ export default function EventModal({
                 <SelectBar
                   label="Team"
                   options= {options}
-                  value={selectedTeamLabel}
+                  value={team}
                   onChange={setTeam}
                   palette={{
                     bg: "white",       // background of input & dropdown

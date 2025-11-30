@@ -2,7 +2,7 @@ import React, {useState,useCallback ,useEffect,useRef} from 'react';
 import { Text, StyleSheet ,View,Pressable,Animated} from 'react-native';
 import Calendar from 'react-native-swipe-calendar';
 import Layout from "./home_layout";
-import CalendarKnob from './calendarKnob';
+import CalendarKnob from './Components/calendarKnob';
 import { ScrollView } from 'react-native-gesture-handler';
 import { account, tablesDb, ID } from "../lib/appwrite";
 import { useLocalSearchParams,router } from 'expo-router';

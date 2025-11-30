@@ -218,7 +218,7 @@ export default function Profile()
         }}
     >
         <View style={common.screen}>
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
+            <ScrollView contentContainerStyle={{ paddingRight: 16, paddingLeft: 16, paddingBottom: 12 }}>
 
             {/* FIRST NAME */}
             <Text style={styles.label}>First Name</Text>

@@ -10,6 +10,9 @@ import { tablesDb, ID } from "../lib/appwrite";
 import { Query } from "react-native-appwrite"; 
 import { ActivityIndicator } from 'react-native';
 import { Alert } from "react-native";
+import EmailTeamList from './Components/EmailTeamList';
+import CreateEmailTemplate from './Components/CreateEmailTemplate';
+import SelectTeams from './Components/SelectTeams';
 
 
 
@@ -25,6 +28,7 @@ export default function Teams() {
 
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [addTeamModalVisible, setAddTeamModalVisible] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
   const [editTeamModalVisible, setEditTeamModalVisible] = useState(false);
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -32,6 +36,19 @@ export default function Teams() {
   const [players, setPlayers] = useState([]);
   const [removingIds, setRemovingIds] = useState(new Set());
   const [matchPlayers,setMatchPlayers]=useState([]);
+  const [isCreateTemplateVisible, setIsCreateTemplateVisible] = useState(false);
+
+  const [teamRows, setTeamRows] = useState([
+    { teamId: null, details: "" },
+  ]);
+  const [templateData, setTemplateData] = useState({
+    templateName: "",
+    userName: "",
+    clubName: "",
+    subject: "",
+    eventBody: "",
+  });
+
   const selectedTeamName =teams.find(t => t.$id === selectedTeam)?.Name ?? null;
   const playerOptions = players.map(p => ({
   label:
@@ -44,6 +61,13 @@ export default function Teams() {
 }));
 const isAdmin = role === 'admin' || role === 'captain';
 const canEditTeam = isAdmin && selectedTeam;
+
+
+const handleOpenCreateTemplate = () => {
+    setSendEmail(false);
+    setIsCreateTemplateVisible(true); 
+    
+  };
 
 const handleUpdateDelete = () => {
   Alert.alert(
@@ -289,6 +313,7 @@ const removeMember = async (rowId) => {
         </View>
 
         {isAdmin && (
+          <>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Pressable
                 onPress={() => setAddTeamModalVisible(true)}
@@ -296,7 +321,6 @@ const removeMember = async (rowId) => {
               >
                 <Text style={{ fontSize: 18, color: colors.surface }}>Create Team</Text>
               </Pressable>
-
               <Pressable
                 disabled={!canEditTeam}
                 onPress={canEditTeam ? () => setEditTeamModalVisible(true) : undefined}
@@ -307,10 +331,88 @@ const removeMember = async (rowId) => {
                 </Text>
               </Pressable>
             </View>
+           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+              <Pressable
+                  onPress={() => setSendEmail(true)}
+                  style={common.buttonNav}
+                >
+                  <Text style={{ fontSize: 18, color: colors.surface }}> Send Email</Text>
+                </Pressable>
+            </View>
+            </>
           )}
         
       </View>
+      <EmailTeamList
+      visible = {sendEmail}
+      onClose={() => setSendEmail(false)}
+      teams={teams}
+      onOpenCreateTemplate={handleOpenCreateTemplate} 
 
+      />
+      <CreateEmailTemplate
+        visible={isCreateTemplateVisible}
+        onClose={() =>{
+          setIsCreateTemplateVisible(false)
+          setSendEmail(true)
+        } }
+        onOpenSelectTeams ={() => {
+          setIsCreateTemplateVisible(false);
+          setIsSelectTeamsTemplateVisible(true);
+        }}
+        teams={teams}
+        onSubmit={
+          async ({ templateName, senderName, subject,teamName, body, recipients }) => 
+            {
+            try 
+            {
+              const uniqueId = ID.unique();
+              await tablesDb.createRow(
+                "68cfc3d00013a224d25f",
+                "emailtemplate",
+                uniqueId,
+                {
+                  templateName: templateName,
+                  senderName: senderName,
+                  clubName: clubName,
+                  subjectLine: subject,
+                  bodyText: body,
+                }
+              );
+
+                const waiting = recipients.filter(r => r.teamId) 
+                .map((row, index)=>
+                  tablesDb.createRow(
+                    "68cfc3d00013a224d25f",
+                    "teamsintemplate",
+                    ID.unique(),
+                    {
+                      templateId: uniqueId,
+                      teamId: row.teamId,
+                      teamName: row.search,
+                      teamDetails: row.details,
+                    }
+                  )
+                );
+                await Promise.all(waiting);
+              console.log("Sending email with template:", 
+                {
+                templateName,
+                senderName,
+                clubName,
+                subject,
+                body,
+                recipients,
+              });
+              setIsCreateTemplateVisible(false);
+            } 
+            catch (e) 
+            {
+              console.warn("Failed to send email", e);
+            }
+      }}
+      />
+      
 
       <AddTeamModal
         visible={addTeamModalVisible}

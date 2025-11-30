@@ -78,19 +78,18 @@ export default function SelectBar({
   maxResults = Number.MAX_SAFE_INTEGER,
   style,
   disabled = false,
-  palette: paletteOverrides = {}, // ⭐ NEW: palette prop
+  palette: paletteOverrides = {},
 }) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef(null);
 
-  // Merge default palette + overrides
   const PALETTE = useMemo(
     () => ({ ...defaultPalette, ...paletteOverrides }),
     [paletteOverrides]
   );
-
   const styles = useMemo(() => createStyles(PALETTE), [PALETTE]);
 
+  // Normalise string options → { label, value }
   const normalizedOptions = useMemo(
     () =>
       options.map((opt) =>
@@ -99,15 +98,26 @@ export default function SelectBar({
     [options]
   );
 
-  const allOptions = useMemo(
-    () => normalizedOptions.slice(0, maxResults),
-    [normalizedOptions, maxResults]
-  );
+  // ⭐ NEW: filter options based on what’s typed in the input (value)
+  const filteredOptions = useMemo(() => {
+    const term = (value || "").toString().toLowerCase().trim();
+
+    if (!term) {
+      // nothing typed → show all (limited)
+      return normalizedOptions.slice(0, maxResults);
+    }
+
+    return normalizedOptions
+      .filter((opt) =>
+        opt.label?.toString().toLowerCase().includes(term)
+      )
+      .slice(0, maxResults);
+  }, [normalizedOptions, maxResults, value]);
 
   const handleSelect = (newVal) => {
+    // when an option is selected, update the input value in parent
     onChange?.(newVal);
     setOpen(false);
-    inputRef.current?.clear?.();
     inputRef.current?.blur();
   };
 
@@ -128,6 +138,7 @@ export default function SelectBar({
           placeholder={placeholder}
           placeholderTextColor={PALETTE.hint}
           editable={!disabled}
+          // typing updates the value in parent (and therefore the filter)
           onChangeText={(t) => onChange?.(t)}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 120)}
@@ -140,14 +151,14 @@ export default function SelectBar({
         <Text style={styles.errorText}>This field is required</Text>
       )}
 
-      {open && allOptions.length > 0 && (
+      {open && filteredOptions.length > 0 && (
         <View style={styles.dropdown}>
           <ScrollView
             style={styles.dropdownScroll}
             keyboardShouldPersistTaps="handled"
             nestedScrollEnabled
           >
-            {allOptions.map((opt) => (
+            {filteredOptions.map((opt) => (
               <TouchableOpacity
                 key={String(opt.value)}
                 onPress={() => handleSelect(opt.value)}
