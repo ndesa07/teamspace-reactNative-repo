@@ -24,6 +24,8 @@ export default function EmailTeamList({
   const [searchValue, setSearchValue] = useState("");
   // The selected template object: { label, value, ... } or null
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
 
 const isTemplateSelected = selectedTemplate !== "" ? true : false;
 
@@ -55,12 +57,19 @@ const isTemplateSelected = selectedTemplate !== "" ? true : false;
     onClose?.();
   };
 
-  const handleSend = () => {
-    if (!selectedTemplate) return;
-    onSubmit?.(selectedTemplate);
+  const handleSend = async () => {
+  if (!selectedTemplate || isSending) return;
+
+  setIsSending(true);
+
+  try {
+    await onSubmit?.(selectedTemplate);   // await your API call
+  } finally {
     setSearchValue("");
     setSelectedTemplate(null);
-  };
+    setIsSending(false); 
+  }
+};
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
@@ -120,12 +129,14 @@ const isTemplateSelected = selectedTemplate !== "" ? true : false;
                 style={[
                   common.pushButtonNav,
                   styles.actionBtn,
-                  !isTemplateSelected && { opacity: 0.5 },
+                  (!isTemplateSelected || isSending) && { opacity: 0.5 },
                 ]}
-                disabled={!isTemplateSelected}
+                disabled={!isTemplateSelected || isSending}
                 onPress={handleSend}
               >
-                <Text style={styles.actionText}>Send</Text>
+                <Text style={styles.actionText}>
+                  {isSending ? "Sending..." : "Send"}
+                </Text>
               </Pressable>
             </View>
           </View>

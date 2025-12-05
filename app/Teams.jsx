@@ -504,15 +504,11 @@ useEffect(() => {
           (row) => row.templateId === updated.id
         );
 
-        console.log("Existing teams for this template:", existingForTemplate);
-        
         for (const row of existingForTemplate) 
-          {
-
-          await tablesDb.deleteRow("68cfc3d00013a224d25f", "teamsintemplate", row.templateId);
+        {
+          await tablesDb.deleteRow("68cfc3d00013a224d25f", "teamsintemplate", row.$id);
         }
         
-
           // 3. Create new teamsintemplate rows from payload
         const toCreate = updated.teamsInTemplate || [];
 
