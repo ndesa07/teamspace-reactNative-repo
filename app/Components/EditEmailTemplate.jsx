@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { colors, common } from "../styles/common";
 import {
   Modal,
@@ -13,37 +13,134 @@ import {
 } from "react-native";
 import SelectBar from "./SelectBar";
 
-export default function CreateEmailTemplate({ visible, onClose, teams, onSubmit,name,cname }) {
+export default function EditEmailTemplate({
+  visible,
+  onClose,
+  teams,
+  onSubmit,
+  template,
+  name,
+  cname,
+  teamsintemplate,
+}) {
+  // ----- Local form state -----
   const [templateName, setTemplateName] = useState("");
-  const [userName, setUserName] = useState(name || "");
+  const [senderName, setSenderName] = useState(name || "");
   const [clubName, setClubName] = useState(cname || "");
-  const [subject, setSubjectName] = useState("");
-  const [eventBody, setEventBody] = useState("");
+  const [subject, setSubject] = useState(""); // maps to subjectLine
+  const [bodyText, setBodyText] = useState(""); // maps to bodyText
+
+  // rows: [{ teamId, teamName, search, details }]
+  const [rows, setRows] = useState([
+    { teamId: null, teamName: "", search: "", details: "" },
+  ]);
+
+  // ----- Helper: build rows from TeamsInTemplate records -----
+  const buildRowsFromTeamsInTemplate = (records = [], currentTemplateId) => {
+    if (!currentTemplateId) {
+      return [{ teamId: null, teamName: "", search: "", details: "" }];
+    }
+
+    // Only rows for this template
+    const filtered = records.filter(
+      (r) => r.templateId === currentTemplateId
+    );
+
+    if (filtered.length === 0) {
+      return [{ teamId: null, teamName: "", search: "", details: "" }];
+    }
+
+    return filtered.map((r) => {
+      const match = (teams || []).find((t) => t.$id === r.teamId);
+      const teamName = match?.Name || "";
+
+      return {
+        teamId: match?.$id ?? r.teamId ?? null,
+        teamName,
+        search: teamName,              // preselect in SelectBar
+        details: r.teamDetails || "",  // map from DB -> UI
+      };
+    });
+  };
+
+  // ----- Prefill when template / visibility / teamsintemplate changes -----
+  useEffect(() => {
+    if (!visible) return;
+
+    if (template) {
+      const {
+        templateName: tmplName,
+        senderName: tmplSender,
+        clubName: tmplClub,
+        subjectLine,
+        bodyText: tmplBody,
+      } = template;
+
+      setTemplateName(tmplName || "");
+      setSenderName(tmplSender ?? name ?? "");
+      setClubName(tmplClub ?? cname ?? "");
+      setSubject(subjectLine || "");
+      setBodyText(tmplBody || "");
+
+      setRows(
+        buildRowsFromTeamsInTemplate(teamsintemplate || [], template.$id)
+      );
+    } else {
+      // No template – just defaults
+      setTemplateName("");
+      setSenderName(name || "");
+      setClubName(cname || "");
+      setSubject("");
+      setBodyText("");
+      setRows([{ teamId: null, teamName: "", search: "", details: "" }]);
+    }
+  }, [template, visible, name, cname, teams, teamsintemplate]);
+
+  // ----- Validation -----
   const isFormValid =
     templateName.trim().length > 0 &&
-    userName.trim().length > 0 &&
+    senderName.trim().length > 0 &&
     clubName.trim().length > 0 &&
     subject.trim().length > 0 &&
-    eventBody.trim().length > 0;
+    bodyText.trim().length > 0;
 
-  // 🔹 rows now include `search` (what appears in SelectBar)
-  const [rows, setRows] = useState([
-    { teamId: null,teamName: "", search: "", details: "" },
-  ]);
-const resetForm = () => {
-  setTemplateName("");
-  setUserName(name || "");
-  setClubName(cname || "");
-  setSubjectName("");
-  setEventBody("");
-  setRows([{ teamId: null, teamName: null, search: "", details: "" }]);
-};
+  // ----- Reset form back to original template / defaults -----
+  const resetForm = () => {
+    if (!template) {
+      setTemplateName("");
+      setSenderName(name || "");
+      setClubName(cname || "");
+      setSubject("");
+      setBodyText("");
+      setRows([{ teamId: null, teamName: "", search: "", details: "" }]);
+      return;
+    }
+
+    const {
+      templateName: tmplName,
+      senderName: tmplSender,
+      clubName: tmplClub,
+      subjectLine,
+      bodyText: tmplBody,
+    } = template;
+
+    setTemplateName(tmplName || "");
+    setSenderName(tmplSender ?? name ?? "");
+    setClubName(tmplClub ?? cname ?? "");
+    setSubject(subjectLine || "");
+    setBodyText(tmplBody || "");
+
+    setRows(
+      buildRowsFromTeamsInTemplate(teamsintemplate || [], template.$id)
+    );
+  };
+
   const handleClose = () => {
     resetForm();
     onClose?.();
   };
 
-  // Build dropdown options from teams (memoised for performance)
+  // ----- SelectBar options -----
   const teamOptions = useMemo(
     () =>
       (teams || []).map((team) => ({
@@ -53,40 +150,37 @@ const resetForm = () => {
     [teams]
   );
 
-  // 🔹 Handle both typing + selecting from SelectBar
+  // ----- Handlers for teams + details -----
   const handleTeamChange = (index, newValue) => {
-  setRows(prev =>
-    prev.map((row, i) => {
-      if (i !== index) return row;
+    setRows((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
 
-      const match = teams.find(t => t.$id === newValue);
+        const match = (teams || []).find((t) => t.$id === newValue);
 
-      if (match) {
-        // user picked an option
+        if (match) {
+          return {
+            ...row,
+            teamId: match.$id,
+            teamName: match.Name,
+            search: match.Name,
+          };
+        }
+
+        // If somehow user typed something not in options
         return {
           ...row,
-          teamId: match.$id,
-          teamName: match.label,
-          search: match.Name,   // 👈 this makes the “opacity change” happen
+          teamId: null,
+          teamName: "",
+          search: newValue,
         };
-      }
-
-      // user is just typing
-      return {
-        ...row,
-        teamId: null,
-        search: newValue,
-        teamName: "",
-      };
-    })
-  );
-};
+      })
+    );
+  };
 
   const handleDetailsChange = (index, text) => {
     setRows((prev) =>
-      prev.map((row, i) =>
-        i === index ? { ...row, details: text } : row
-      )
+      prev.map((row, i) => (i === index ? { ...row, details: text } : row))
     );
   };
 
@@ -94,7 +188,7 @@ const resetForm = () => {
     setRows((prev) =>
       prev.length >= 20
         ? prev
-        : [...prev, { teamId: null, search: "", details: "" }]
+        : [...prev, { teamId: null, teamName: "", search: "", details: "" }]
     );
   };
 
@@ -105,49 +199,46 @@ const resetForm = () => {
   const atMax = rows.length >= 20;
   const atMin = rows.length <= 1;
 
-  const handleSend = () => 
-    {
+  // ----- Save payload back to parent -----
+  const handleSave = () => {
     const payload = {
-      templateName: templateName,
-      senderName: userName,
-      clubName: clubName,
-      subject: subject,
-      body: eventBody,
-      // only send the useful bits; no need to send `search`
-      recipients: rows.map((row) => ({
+      id: template?.$id, // EmailTemplate row id
+      templateName,
+      senderName,
+      clubName,
+      subjectLine: subject,
+      bodyText,
+      // Explicit mapping back to TeamsInTemplate structure
+      teamsInTemplate: rows.map((row) => ({
+        templateId: template?.$id,
         teamId: row.teamId,
-        teamName:row.search,
-        details: row.details,
+        teamDetails: row.details,
       })),
     };
-    onSubmit({
-      templateName: templateName,
-      senderName: userName,
-      clubName: clubName,
-      subject: subject,
-      body: eventBody,
-      // only send the useful bits; no need to send `search`
-      recipients: rows.map((row) => ({
-        teamId: row.teamId,
-        teamName:row.search,
-        details: row.details,
-      })),
-    });
+
+    onSubmit?.(payload);
   };
 
+  // ----- UI -----
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={handleClose}
+    >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.card}>
-          <ScrollView showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {/* Header */}
             <View style={styles.headerRow}>
-              <Text style={styles.titleText}>Create Email Template</Text>
+              <Text style={styles.titleText}>Edit Email Template</Text>
             </View>
 
             {/* Template fields */}
@@ -175,8 +266,8 @@ const resetForm = () => {
             <View style={{ marginBottom: 0 }}>
               <Text style={styles.label}>Sender Name</Text>
               <TextInput
-                value={userName}
-                onChangeText={setUserName}
+                value={senderName}
+                onChangeText={setSenderName}
                 placeholder="Enter sender name"
                 style={styles.input}
                 placeholderTextColor={colors.surface}
@@ -198,7 +289,7 @@ const resetForm = () => {
               <Text style={styles.label}>Email Subject</Text>
               <TextInput
                 value={subject}
-                onChangeText={setSubjectName}
+                onChangeText={setSubject}
                 placeholder="Enter subject"
                 style={styles.input}
                 placeholderTextColor={colors.surface}
@@ -208,8 +299,8 @@ const resetForm = () => {
             <View style={styles.fieldBlock}>
               <Text style={styles.label}>Header</Text>
               <TextInput
-                value={eventBody}
-                onChangeText={setEventBody}
+                value={bodyText}
+                onChangeText={setBodyText}
                 multiline
                 placeholder="Add email header"
                 placeholderTextColor={colors.surface}
@@ -237,26 +328,20 @@ const resetForm = () => {
                 <Text style={styles.label}>Team {index + 1}</Text>
                 <SelectBar
                   placeholder="Search teams..."
-                  options={teams.map((team) => ({ label: team.Name, value: team.$id }))}
-                  value={row.search} 
-                  required = {true}
+                  options={teamOptions}
+                  value={row.search}
+                  required={true}
                   showError={false}
                   maxResults={10}
                   style={{ marginTop: 2, marginBottom: 10 }}
-                  onChange={(val) => 
-                    {
-                      handleTeamChange(index, val)
-                      
-                    }}
+                  onChange={(val) => handleTeamChange(index, val)}
                 />
 
                 <View style={styles.fieldBlock}>
                   <Text style={styles.label}>Details</Text>
                   <TextInput
                     value={row.details}
-                    onChangeText={(text) =>
-                      handleDetailsChange(index, text)
-                    }
+                    onChangeText={(text) => handleDetailsChange(index, text)}
                     multiline
                     placeholder="Add details for this team…"
                     placeholderTextColor={colors.surface}
@@ -290,7 +375,7 @@ const resetForm = () => {
                 <Text style={styles.actionText}>Add Team</Text>
               </Pressable>
 
-              <Pressable
+            <Pressable
                 style={[
                   common.pushButtonNav,
                   styles.actionBtn,
@@ -312,7 +397,7 @@ const resetForm = () => {
                 width: "100%",
               }}
             />
-            <View style={styles.actionsRow}>
+            <View className="actionsRow" style={styles.actionsRow}>
               <Pressable
                 style={[common.pushButtonNav, styles.actionBtn]}
                 onPress={handleClose}
@@ -320,22 +405,22 @@ const resetForm = () => {
                 <Text style={styles.actionText}>Cancel</Text>
               </Pressable>
 
-            <Pressable
-              style={[
-                common.pushButtonNav,
-                styles.actionBtn,
-                !isFormValid && { opacity: 0.5 }, // visual feedback
-              ]}
-              onPress={handleSend}
-              disabled={!isFormValid}
-            >
-              <Text style={styles.actionText}>Create</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
-  </Modal>
+              <Pressable
+                style={[
+                  common.pushButtonNav,
+                  styles.actionBtn,
+                  !isFormValid && { opacity: 0.5 },
+                ]}
+                onPress={handleSave}
+                disabled={!isFormValid}
+              >
+                <Text style={styles.actionText}>Save Changes</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 

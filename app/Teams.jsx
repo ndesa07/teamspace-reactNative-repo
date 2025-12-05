@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Keyboard,ScrollView } from 'react-native';
 import { common, colors } from './styles/common';
 import Layout from "./home_layout";
@@ -13,6 +13,9 @@ import { Alert } from "react-native";
 import EmailTeamList from './Components/EmailTeamList';
 import CreateEmailTemplate from './Components/CreateEmailTemplate';
 import SelectTeams from './Components/SelectTeams';
+import { TeamListEmail } from './Functions/TeamListEmail';
+import EditEmailTemplate from './Components/EditEmailTemplate';
+
 
 
 
@@ -25,6 +28,9 @@ export default function Teams() {
   const playerId = Array.isArray(params.playerId) ? params.playerId[0] : params.playerId;
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null); 
+  const [selectedTeamLabel, setSelectedTeamLabel] = useState(""); // what appears in the input
+  const [editVisible, setEditVisible] = useState(false);
+  const [templateToEdit, setTemplateToEdit] = useState(null); 
 
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [addTeamModalVisible, setAddTeamModalVisible] = useState(false);
@@ -37,6 +43,21 @@ export default function Teams() {
   const [removingIds, setRemovingIds] = useState(new Set());
   const [matchPlayers,setMatchPlayers]=useState([]);
   const [isCreateTemplateVisible, setIsCreateTemplateVisible] = useState(false);
+  const [allEmailTemplates, setAllEmailTemplates] = useState([]);
+  const [templateOptions, setTemplateOptions] = useState([]);
+  const [teamsintemplate, setTeamsInTemplate] = useState([]);
+
+  const handleEditTemplate = (tpl) => {
+    fetchTempalte(tpl.value).then((fullTpl) => {
+      setTemplateToEdit(fullTpl);   // store the selected template
+      setEditVisible(true);         // open the edit modal
+      setSendEmail(false);          // close email modal
+    });
+    fetchTeamsInTemplate(tpl.value).then((teamsInTpl) => {
+      setTeamsInTemplate(teamsInTpl);
+    });
+
+  };
 
   const [teamRows, setTeamRows] = useState([
     { teamId: null, details: "" },
@@ -62,12 +83,36 @@ export default function Teams() {
 const isAdmin = role === 'admin' || role === 'captain';
 const canEditTeam = isAdmin && selectedTeam;
 
-
 const handleOpenCreateTemplate = () => {
     setSendEmail(false);
     setIsCreateTemplateVisible(true); 
     
   };
+const handleSendEmail = async (selectedTemplate) => {
+    try {
+      const people = await tablesDb.listRows(
+        "68cfc3d00013a224d25f",
+        "name",
+        [
+          Query.equal("clubName", clubName)
+        ]
+      );
+      const emails = people.rows
+        .filter(p => p.email && p.email.includes("@"))
+        .map(p => p.email);
+    
+       const result = await TeamListEmail({
+      templateId: selectedTemplate.value, 
+      recipients: emails,
+    });
+
+    } 
+    catch (e) 
+    {
+      console.warn("Failed to send email", e);
+      alert("Failed to send email: " + (e?.message ?? String(e)));
+    }
+};
 
 const handleUpdateDelete = () => {
   Alert.alert(
@@ -131,6 +176,42 @@ const removeMember = async (rowId) => {
     });
   }
 };
+async function fetchAllEmailTemplates() {
+    try {
+      const response = await tablesDb.listRows(
+        "68cfc3d00013a224d25f",
+        "emailtemplate",
+        [
+          Query.equal("clubName", clubName)
+        ]
+      );
+      return response.rows ?? response.documents ?? [];
+    } 
+    catch (e) 
+    {
+      console.warn('Failed to fetch email templates', e);
+      return [];
+    }
+  };
+  const loadEmailTemplates = async () => {
+  try {
+    const templates = await fetchAllEmailTemplates();   // 👈 call the provided function
+    setTemplateOptions(
+      templates.map((t) => ({
+        label: t.templateName,
+        value: t.$id,
+      }))
+    );
+  } catch (err) {
+    console.error("Failed to load templates:", err);
+  }
+};
+useEffect(() => {
+  if (sendEmail) {
+    loadEmailTemplates();   // 🔥 auto-load templates
+  }
+}, [sendEmail]);
+
   async function fetchTeamPlayers(teamId) {
   try {
     const res = await tablesDb.listRows(
@@ -163,6 +244,39 @@ const removeMember = async (rowId) => {
     catch (e) 
     {
       console.warn('Failed to fetch teams', e);
+    }
+  }
+  async function fetchTempalte(templateId) {
+    try {
+      const response = await tablesDb.getRow(
+        "68cfc3d00013a224d25f",
+        "emailtemplate",
+        templateId
+      );
+      return response;
+    } 
+    catch (e) 
+    {
+      console.warn('Failed to fetch template', e);
+      return null;
+    }
+  }
+  async function fetchTeamsInTemplate(templateId) 
+  {
+    try {
+      const response = await tablesDb.listRows(
+        "68cfc3d00013a224d25f",
+        "teamsintemplate",
+        [
+          Query.equal("templateId", templateId)
+        ]
+      );
+      return response.rows ?? response.documents ?? [];
+    } 
+    catch (e) 
+    {
+      console.warn('Failed to fetch teams in template', e);
+      return [];
     }
   }
   async function fetchPlayers()
@@ -224,15 +338,17 @@ const removeMember = async (rowId) => {
           maxResults={10}
           style={{ marginTop: 20 }}
           onOpen={() => {
-            fetchTeams();
-             setSelectedTeam(null);
-             setIsSelectOpen(true);
+             fetchTeams();
+              setSelectedTeam(null);  // clear selected team internally?
+              setSelectedTeamLabel(""); // clear UI text
+              setIsSelectOpen(true);
 
           }}
           onClose={() => setIsSelectOpen(false)}
           onChange={async (teamId) => {
             const teamObj = teams.find(t => t.$id === teamId);
             setSelectedTeam(teamId);
+            setSelectedTeamLabel(teamObj?.Name || "");
             setTeamObj(teamObj);
             setIsSelectOpen(false);
             const teamPlayers = await fetchTeamPlayers(teamId);
@@ -343,15 +459,87 @@ const removeMember = async (rowId) => {
           )}
         
       </View>
-      <EmailTeamList
-      visible = {sendEmail}
-      onClose={() => setSendEmail(false)}
-      teams={teams}
-      onOpenCreateTemplate={handleOpenCreateTemplate} 
 
+      <EmailTeamList
+        visible = {sendEmail}
+        onClose={() => setSendEmail(false)}
+        teams={teams}
+        onOpenCreateTemplate={handleOpenCreateTemplate} 
+        templateOptions={templateOptions}
+        onSubmit={async (selectedTemplate)=> 
+          {
+          setSendEmail(false); 
+          handleSendEmail(selectedTemplate);
+        }}
+        onEditTemplate={handleEditTemplate}
+      />
+      <EditEmailTemplate
+        visible={editVisible}
+        onClose={() => {
+          setEditVisible(false);
+          setSendEmail(true);
+        }}
+        teams={teams}
+        template={templateToEdit} // whatever you loaded from DB
+        name={name}
+        cname={clubName}
+        teamsintemplate={teamsintemplate}
+        onSubmit={async(updated) => 
+        { 
+          try
+          {
+            await tablesDb.updateRow(
+            "68cfc3d00013a224d25f",
+            "emailtemplate",
+            updated.id, // template row id
+            {
+              templateName: updated.templateName,
+              senderName: updated.senderName,
+              clubName: updated.clubName,
+              subjectLine: updated.subjectLine, // note: subjectLine
+              bodyText: updated.bodyText,       // note: bodyText
+            }
+          );
+          const existingForTemplate = teamsintemplate.filter(
+          (row) => row.templateId === updated.id
+        );
+
+        console.log("Existing teams for this template:", existingForTemplate);
+        
+        for (const row of existingForTemplate) 
+          {
+
+          await tablesDb.deleteRow("68cfc3d00013a224d25f", "teamsintemplate", row.templateId);
+        }
+        
+
+          // 3. Create new teamsintemplate rows from payload
+        const toCreate = updated.teamsInTemplate || [];
+
+          for (const entry of toCreate) 
+            {
+            await tablesDb.createRow( "68cfc3d00013a224d25f", "teamsintemplate", 
+            ID.unique(),
+              {
+              templateId: updated.id,
+              teamId: entry.teamId,
+              teamDetails: entry.teamDetails,
+            });
+          }
+          setEditVisible(false);
+          setSendEmail(true);
+          }
+          catch (e)
+          {
+            console.warn("Failed to update template", e);
+          }
+          
+        }}
       />
       <CreateEmailTemplate
         visible={isCreateTemplateVisible}
+        name={name}
+        cname={clubName}
         onClose={() =>{
           setIsCreateTemplateVisible(false)
           setSendEmail(true)
@@ -379,7 +567,6 @@ const removeMember = async (rowId) => {
                   bodyText: body,
                 }
               );
-
                 const waiting = recipients.filter(r => r.teamId) 
                 .map((row, index)=>
                   tablesDb.createRow(
@@ -389,21 +576,12 @@ const removeMember = async (rowId) => {
                     {
                       templateId: uniqueId,
                       teamId: row.teamId,
-                      teamName: row.search,
                       teamDetails: row.details,
                     }
                   )
                 );
                 await Promise.all(waiting);
-              console.log("Sending email with template:", 
-                {
-                templateName,
-                senderName,
-                clubName,
-                subject,
-                body,
-                recipients,
-              });
+
               setIsCreateTemplateVisible(false);
             } 
             catch (e) 
