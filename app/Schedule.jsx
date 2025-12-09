@@ -4,7 +4,7 @@ import Calendar from 'react-native-swipe-calendar';
 import Layout from "./home_layout";
 import CalendarKnob from './Components/calendarKnob';
 import { ScrollView } from 'react-native-gesture-handler';
-import { account, tablesDb, ID } from "../lib/appwrite";
+import { account, tablesDb, ID, functions } from "../lib/appwrite";
 import { useLocalSearchParams,router } from 'expo-router';
 import { Query } from "react-native-appwrite"; 
 import { MaterialIcons } from "@expo/vector-icons";
@@ -327,6 +327,19 @@ async function loadEventDetails(evt) {
 
       await loadEvents(String(Date).trim());
       setAddEventModal(false);
+
+      {/* Send push notification via Appwrite Function  */}
+      await functions.createExecution(
+      "69377c99003c23971ea3",  
+      JSON.stringify({
+        clubName: clubName,      
+        eventName: EventName, 
+        date: String(Date).trim(),             
+      })
+    );
+   
+
+
     } catch (e) {
       console.warn("Failed to create event:", e?.message ?? e);
       setAnnError(e?.message ?? String(e));

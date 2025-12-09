@@ -3,13 +3,14 @@ import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet, Button,TouchableWithoutFeedback,Keyboard } from "react-native";
 import Layout from "./home_layout";
 import { common,colors } from "./styles/common";
-import { account, tablesDb, ID } from "../lib/appwrite";
+import { account, tablesDb, ID,databases } from "../lib/appwrite";
 import { MaterialIcons } from "@expo/vector-icons";
 import AnnouncementModal from "./Components/AnnouncementModal.jsx";
 import { Query } from "react-native-appwrite"; // or from your wrapper if re-exported
 import { Pressable } from "react-native";
 import AnnouncementDetailModal from "./Components/AnnouncementDetailModal";
 import { router } from "expo-router";
+import * as Notifications from "expo-notifications";
 
 
 export default function Home() {
@@ -37,6 +38,49 @@ export default function Home() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [updatingDetail, setUpdatingDetail] = useState(false);
 
+async function registerPushToken() {
+  try {
+    // Request permission
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== "granted") {
+      console.log("Notification permission not granted");
+      return;
+    }
+
+    // Get Expo push token
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log("Expo push token:", token);
+
+    // Get logged-in Appwrite user
+    const user = await account.get();
+
+    // Fetch user document from CricketClub
+    const userDoc = await databases.getDocument(
+      "68cfc3d00013a224d25f",
+      "name",
+      user.$id
+    );
+
+    // Merge tokens, avoid duplicates
+    const updatedTokens = Array.isArray(userDoc.expoPushTokens)
+      ? Array.from(new Set([...userDoc.expoPushTokens, token]))
+      : [token];
+
+    // Save token back to Appwrite
+    await databases.updateDocument(
+      "68cfc3d00013a224d25f",
+      "name",
+      user.$id,
+      {
+        expoPushTokens: updatedTokens,
+      }
+    );
+
+    console.log("Push token saved successfully!");
+  } catch (err) {
+    console.log("Failed to register push token:", err);
+  }
+}
 
   // 1) Load current user profile row (role/club/name)
   useEffect(() => {
@@ -59,6 +103,9 @@ export default function Home() {
     })();
     return () => { alive = false; };
   }, []);
+  useEffect(() => {
+  registerPushToken();
+}, []);
 
   // 2) Function to (re)load announcements for current Club
   const loadAnnouncements = useCallback(async () => {
