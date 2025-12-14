@@ -332,6 +332,7 @@ async function loadEventDetails(evt) {
       await functions.createExecution(
       "69377c99003c23971ea3",  
       JSON.stringify({
+        type: "EVENT",
         clubName: clubName,      
         eventName: EventName, 
         date: String(Date).trim(),             

@@ -8,6 +8,7 @@
     "icon": "./assets/TeamSpaceIcon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -32,8 +33,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
-    ],
+  "expo-router",
+  "expo-notifications"
+],
     "extra": {
       "router": {},
       "eas": {

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView, StyleSheet, Button,TouchableWithoutFeedback,Keyboard } from "react-native";
 import Layout from "./home_layout";
 import { common,colors } from "./styles/common";
-import { account, tablesDb, ID,databases } from "../lib/appwrite";
+import { account, tablesDb, ID,databases,functions } from "../lib/appwrite";
 import { MaterialIcons } from "@expo/vector-icons";
 import AnnouncementModal from "./Components/AnnouncementModal.jsx";
 import { Query } from "react-native-appwrite"; // or from your wrapper if re-exported
@@ -173,6 +173,15 @@ async function registerPushToken() {
           name: (firstName +" " + lastName), // if you store author name
           // only if attribute exists in schema
         }
+      );
+      {/* Send push notification via Appwrite Function  */}
+        await functions.createExecution(
+        "69377c99003c23971ea3",  
+        JSON.stringify({
+          type: "ANNOUNCEMENT",
+          clubName: clubName,      
+          announcementTitle: title, 
+        })
       );
 
       // Immediately refresh list

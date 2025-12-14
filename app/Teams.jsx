@@ -1,5 +1,5 @@
 import React, { useState,useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Keyboard,ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Keyboard,ScrollView,Switch } from 'react-native';
 import { common, colors } from './styles/common';
 import Layout from "./home_layout";
 import { router, useLocalSearchParams } from 'expo-router';
@@ -15,6 +15,7 @@ import CreateEmailTemplate from './Components/CreateEmailTemplate';
 import SelectTeams from './Components/SelectTeams';
 import { TeamListEmail } from './Functions/TeamListEmail';
 import EditEmailTemplate from './Components/EditEmailTemplate';
+
 
 
 
@@ -46,6 +47,11 @@ export default function Teams() {
   const [allEmailTemplates, setAllEmailTemplates] = useState([]);
   const [templateOptions, setTemplateOptions] = useState([]);
   const [teamsintemplate, setTeamsInTemplate] = useState([]);
+  const [eventBody, setEventBody] = useState(initialBody);
+  
+
+
+
 
   const handleEditTemplate = (tpl) => {
     fetchTempalte(tpl.value).then((fullTpl) => {
@@ -100,11 +106,19 @@ const handleSendEmail = async (selectedTemplate) => {
       const emails = people.rows
         .filter(p => p.email && p.email.includes("@"))
         .map(p => p.email);
+        
+      if (!emails.length)
+         {
+        alert("No valid email addresses found for this club.");
+      return;
+    }
     
        const result = await TeamListEmail({
       templateId: selectedTemplate.value, 
       recipients: emails,
     });
+    
+    alert(`Email sent to ${emails.length} recipients.`);
 
     } 
     catch (e) 
@@ -174,6 +188,23 @@ const removeMember = async (rowId) => {
       next.delete(rowId);
       return next;
     });
+  }
+};
+const toggleActiveStatus = async (newValue) => {
+  try {
+    setIsActive(newValue); // optimistic update
+
+    await tablesDb.updateRow(
+      "68cfc3d00013a224d25f",
+      "teams",
+      teamObj.$id,
+      { Active: newValue }
+    );
+
+  } catch (err) {
+    console.warn("Failed to update active status:", err);
+    alert("Failed to update status. Please try again.");
+    setIsActive(!newValue); // revert on error
   }
 };
 async function fetchAllEmailTemplates() {
@@ -301,6 +332,9 @@ useEffect(() => {
       return [];
     }
   }
+    const [isActive, setIsActive] = useState(teamObj?.isSelectionActive ?? false);
+    const canSeePlayers = isAdmin || isActive;
+
 
   React.useEffect(() => {
     fetchTeams();
@@ -353,6 +387,7 @@ useEffect(() => {
             setIsSelectOpen(false);
             const teamPlayers = await fetchTeamPlayers(teamId);
             setMatchPlayers(teamPlayers); 
+            setIsActive(teamObj?.Active ?? false);
           }}
         />
 
@@ -371,53 +406,86 @@ useEffect(() => {
               <Text style={{ fontSize: 18, marginBottom: 5, color: colors.surface }}>
                 <Text style={{ fontWeight: '600' }}>Club: </Text>{teamObj?.ClubName}
               </Text>
+              {isAdmin && (
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                <Text style={{ fontSize: 18, marginRight: 10, color: colors.surface, fontWeight: "600" }}>
+                  Active:
+                </Text>
+
+                <Switch
+                  value={isActive}
+                  onValueChange={toggleActiveStatus}
+                  trackColor={{ false: colors.border, true: colors.muted }}
+                  thumbColor={isActive ? colors.surface : colors.border}
+                />
+
+                <Text style={{ marginLeft: 10, fontSize: 16, color: colors.surface }}>
+                  {isActive ? "Active" : "Inactive"}
+                </Text>
+                <Text style={styles.label}>Details</Text>
+                  <TextInput
+                    value={eventBody}
+                    onChangeText={setEventBody}
+                    multiline
+                    placeholder="Add event details…"
+                    placeholderTextColor="#9CA3AF"
+                    style={styles.textarea}
+                  /> 
+              </View>
+
+            )}
 
               <Text style={{ fontSize: 20, fontWeight: '600', marginTop: 20, marginBottom: 8, color: colors.surface }}>
                 Players
               </Text>
+              {canSeePlayers ?  (
+                matchPlayers.map((p, idx) => {
+                  const isRemoving = removingIds.has(p.$id);
+                  return (
+                    <View
+                      key={p.$id}
+                      style={{
+                        paddingVertical: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 16, color: colors.surface, flex: 1 }}>
+                        {idx + 1}. {p.Player}
+                      </Text>
 
-              {matchPlayers.map((p, idx) => {
-                const isRemoving = removingIds.has(p.$id);
-                return (
-                  <View
-                    key={p.$id}
-                    style={{
-                      paddingVertical: 10,
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.border,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: 16, color: colors.surface, flex: 1 }}>
-                      {idx + 1}. {p.Player}
-                    </Text>
-
-                    {isAdmin && (
-                      <Pressable
-                        onPress={() => removeMember(p.$id)}
-                        disabled={isRemoving}
-                        style={{
-                          paddingVertical: 6,
-                          paddingHorizontal: 10,
-                          borderRadius: 8,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          backgroundColor: colors.surfaceAlt,
-                          opacity: isRemoving ? 0.6 : 1,
-                        }}
-                      >
-                        {isRemoving ? (
-                          <ActivityIndicator size="small" color={colors.surface} />
-                        ) : (
-                          <Text style={{ color: colors.surface, fontSize: 12 }}>Remove</Text>
-                        )}
-                      </Pressable>
-                    )}
-                  </View>
-                );
-              })}
+                      {isAdmin && (
+                        <Pressable
+                          onPress={() => removeMember(p.$id)}
+                          disabled={isRemoving}
+                          style={{
+                            paddingVertical: 6,
+                            paddingHorizontal: 10,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            backgroundColor: colors.surfaceAlt,
+                            opacity: isRemoving ? 0.6 : 1,
+                          }}
+                        >
+                          {isRemoving ? (
+                            <ActivityIndicator size="small" color={colors.surface} />
+                          ) : (
+                            <Text style={{ color: colors.surface, fontSize: 12 }}>Remove</Text>
+                          )}
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })
+              ): (
+                <Text style={{ fontSize: 16, color: colors.surface, marginTop: 8 }}>
+                  Team list is not yet published. Please check back later.
+                </Text>
+              )}
             </View>
           ) : (
             <Text style={{ fontSize: 16, color: colors.surface }}>

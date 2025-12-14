@@ -34,6 +34,7 @@ function time12(d) {
   return toAmPm(d.getHours(), d.getMinutes());
 }
 
+
 export default function EventModal({
   visible,
   onClose,
@@ -124,6 +125,7 @@ export default function EventModal({
       EventType:team,
     });
   };
+  
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -158,17 +160,16 @@ export default function EventModal({
               <View style ={{margin: 1, marginBottom: 20}}>
                 <SelectBar
                   label="Team"
-                  options= {options}
-                  value={team}
-                  onChange={setTeam}
+                  options={options}
+                  value={selectedTeamLabel}  // 👈 show the team name (label)
+                  onChange={setTeam}         // SelectBar still returns the teamId in onChange
                   palette={{
-                    bg: "white",       // background of input & dropdown
-                    text: "#0b1020",     // text color
-                    border: "#d1d5db",   // border color
-                    overlay: "white",  // dropdown background
-                    hint: "#0b1020",     // placeholder + chevron color
+                    bg: "white",
+                    text: "#0b1020",
+                    border: "#d1d5db",
+                    overlay: "white",
+                    hint: "#0b1020",
                   }}
-                  
                 />
 
                 
