@@ -47,7 +47,7 @@ export default function Teams() {
   const [allEmailTemplates, setAllEmailTemplates] = useState([]);
   const [templateOptions, setTemplateOptions] = useState([]);
   const [teamsintemplate, setTeamsInTemplate] = useState([]);
-  const [eventBody, setEventBody] = useState(initialBody);
+  const [eventBody, setEventBody] = useState("");
   
 
 

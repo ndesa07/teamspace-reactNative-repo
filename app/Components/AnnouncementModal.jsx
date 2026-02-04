@@ -19,8 +19,10 @@ export default function AnnouncementModal({
   const [body, setBody] = useState(initialBody);
   const [active, setActive] = useState(initialActive); // 👈 NEW
 
-  useEffect(() => {
-    if (visible) {
+  useEffect(() => 
+    {
+    if (visible) 
+      {
       setTitle(initialTitle);
       setBody(initialBody);
       setActive(initialActive);
