@@ -18,7 +18,7 @@ import { router } from "expo-router";
 import { common, colors } from "./styles/common";
 import { account, ID, tablesDb } from "../lib/appwrite";
 import { DB_ID, Table_ID } from "../lib/constants";
-import { Query } from "react-native-appwrite";
+import { Query } from "appwrite";
 import ClubSearchDropdown from "./Components/dropDownBar";
 import { sendWelcomeEmail } from "./Functions/WelcomeEmail";
 

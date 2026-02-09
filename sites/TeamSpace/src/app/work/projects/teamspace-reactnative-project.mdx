@@ -1,0 +1,96 @@
+---
+title: "TeamSpace: A Cross-Platform Cricket Club Management App"
+publishedAt: "2025-10-20"
+summary: "A full-stack mobile app built with React Native and Appwrite that simplifies scheduling, team management, and communication for cricket clubs."
+images:
+  - "/images/Schedule.jpg"
+  - "/images/TeamsFilled.jpg"
+  - "/images/AddEvent.jpg"
+  - "/images/TrainingModal.jpg"
+team:
+  - name: "Nihal Desai"
+    role: "Full-Stack Developer"
+    avatar: "/images/avatar-nihal.jpg"
+    linkedIn: "https://www.linkedin.com/in/nihal-desai-a7052b24b/"
+link: "https://github.com/nihaldesai/TeamSpace"
+---
+
+## Overview
+
+**TeamSpace** is a mobile app that centralises scheduling, team management, and player availability for cricket clubs.  
+Built with **React Native** and **Appwrite**, it gives coaches, captains, and players a shared source of truth with real-time updates, simple workflows, and role-aware permissions.
+
+The idea started as a lightweight calendar for trainings and fixtures. As usage grew, TeamSpace became a modular platform with authentication, CRUD for teams and events, and live sync across devices.
+
+---
+
+## Key Features
+
+- **Role-Based Authentication**  
+  Users join as **Admin/Coach**, **Captain**, or **Player** with scoped capabilities for creating teams, managing events, and setting availability.  
+  ![Sign Up Screen](/images/SignUp.jpg)
+
+- **Smart Scheduling**  
+  Create, edit, and archive trainings and matches; availability updates propagate instantly via Appwrite’s real-time database.  
+  ![Schedule Page](/images/Schedule.jpg)
+
+- **Interactive Event Modals**  
+  Players mark availability; admins see confirmed lists and status at a glance.  
+  ![Training Modal](/images/TrainingModal.jpg)
+
+- **Team Management**  
+  Create squads, add/remove players, and review roster details in a clean dashboard.  
+  ![Teams Page](/images/TeamsFilled.jpg)
+
+- **Seamless Navigation**  
+  **Expo Router** tabs for **Schedule**, **Teams**, and **Profile** deliver a familiar, native feel.
+
+---
+
+## Technologies Used
+
+- **React Native (Expo)** for cross-platform UI  
+- **Appwrite** for auth, databases, storage, and real-time sync  
+- **React Context + Hooks** for app-wide state and side-effects  
+- **JavaScript (ES6+)** for reusable components and utilities  
+- **Appwrite Cloud Functions** for secure, event-driven tasks
+
+---
+
+## Development Progression
+
+- **Phase 1 – Prototype**  
+  Local-state calendar, basic event CRUD, and stable navigation/typography foundations.
+
+- **Phase 2 – Cloud-Backed Core**  
+  Appwrite integration for authentication, collections, and subscriptions; permissions mapped to user roles.
+
+- **Phase 3 – UX Polish**  
+  Dark theme, accessible contrasts, rounded modals, and tighter spacing; error states and empty states added.
+
+- **Phase 4 – Field Testing & Tuning**  
+  Sessions with real clubs informed faster queries, optimistic UI for availability toggles, and safer concurrency.
+
+---
+
+## Challenges and Learnings
+
+- Keeping **real-time state** consistent between admin dashboards and player devices.  
+- Designing **clear role boundaries** to avoid accidental edits.  
+- Handling **async updates** without flicker through optimistic updates and conflict guards.
+
+Modularising screens and extracting shared primitives (buttons, inputs, modals) made the app easier to scale and maintain.
+
+---
+
+## Outcome
+
+TeamSpace reduces coordination overhead, cuts scheduling mistakes, and improves transparency for squads.  
+Planned next steps: **push notifications**, **attendance analytics**, and **match performance tracking** to deepen team insights.
+
+---
+
+export const metadata = {
+  projectType: "Full-Stack Mobile App",
+  tags: ["React Native", "Appwrite", "Expo", "Context API", "Mobile UI/UX"],
+}

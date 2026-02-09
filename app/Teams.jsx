@@ -1,5 +1,5 @@
 import React, { useState,useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Keyboard,ScrollView,Switch } from 'react-native';
+import { View, Text, Pressable,TextInput, StyleSheet, Keyboard,ScrollView,Switch } from 'react-native';
 import { common, colors } from './styles/common';
 import Layout from "./home_layout";
 import { router, useLocalSearchParams } from 'expo-router';
@@ -7,7 +7,7 @@ import SelectBar from './Components/SelectBar';
 import AddTeamModal from './Components/CreateTeamModal';
 import EditTeamModal from './Components/EditTeam';
 import { tablesDb, ID } from "../lib/appwrite";
-import { Query } from "react-native-appwrite"; 
+import { Query } from "appwrite"; 
 import { ActivityIndicator } from 'react-native';
 import { Alert } from "react-native";
 import EmailTeamList from './Components/EmailTeamList';
@@ -15,6 +15,7 @@ import CreateEmailTemplate from './Components/CreateEmailTemplate';
 import SelectTeams from './Components/SelectTeams';
 import { TeamListEmail } from './Functions/TeamListEmail';
 import EditEmailTemplate from './Components/EditEmailTemplate';
+import { databases } from '../lib/appwrite';
 
 
 
@@ -48,10 +49,33 @@ export default function Teams() {
   const [templateOptions, setTemplateOptions] = useState([]);
   const [teamsintemplate, setTeamsInTemplate] = useState([]);
   const [eventBody, setEventBody] = useState("");
+  const [notes,setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
   
 
 
+  const onSaveNotes = async () => {
+    if (!teamObj?.$id) return;
 
+    setSaving(true);
+    setSaveError("");
+    try {
+      await databases.updateDocument("68cfc3d00013a224d25f", "teams", teamObj.$id, {
+        Notes: notes, // make sure your Appwrite attribute is exactly "Notes"
+      });
+      setSaved(true);
+
+      // Optional: auto-clear "Saved" after 1.5s
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      console.error(e);
+      setSaveError("Couldn’t save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleEditTemplate = (tpl) => {
     fetchTempalte(tpl.value).then((fullTpl) => {
@@ -310,6 +334,63 @@ useEffect(() => {
       return [];
     }
   }
+  const isValidAppwriteId = (id) =>
+  typeof id === "string" &&
+  id.length > 0 &&
+  id.length <= 36 &&
+  /^[A-Za-z0-9][A-Za-z0-9_]*$/.test(id);
+
+  async function fetchNotes(teamId)
+  {
+    if (!isValidAppwriteId(teamId)) {
+    // silently skip
+    return;
+  }
+  if (!teamId) {
+    setNotes("");
+    return;
+  }
+
+  try {
+    const team = await tablesDb.getRow(
+      "68cfc3d00013a224d25f", // project/db id you're using with tablesDb
+      "teams",               // table id
+      teamId                 // row id
+    );
+
+    setNotes(team?.Notes ?? "");
+  } catch (e) {
+    console.warn("Failed to fetch notes", e);
+    setNotes("");
+  }
+}
+
+
+async function fetchActivityStatus(teamId) {
+  if (!isValidAppwriteId(teamId)) {
+    // silently skip
+    return;
+  }
+  if (!teamId) {
+    setIsActive(false);
+    return;
+  }
+  
+
+  try {
+    const team = await tablesDb.getRow(
+      "68cfc3d00013a224d25f",
+      "teams",
+      teamId
+    );
+
+    setIsActive(team?.Active ?? false);
+  } catch (e) {
+    console.warn("Failed to fetch activity status", e);
+    setIsActive(false);
+  }
+}
+
   async function fetchPlayers()
   {
     try {
@@ -334,7 +415,16 @@ useEffect(() => {
   }
     const [isActive, setIsActive] = useState(teamObj?.isSelectionActive ?? false);
     const canSeePlayers = isAdmin || isActive;
+useEffect(() => {
+  if (!selectedTeam) {
+    setNotes("");
+    setIsActive(false);
+    return;
+  }
 
+  fetchNotes(selectedTeam);
+  fetchActivityStatus(selectedTeam);
+}, [selectedTeam]);
 
   React.useEffect(() => {
     fetchTeams();
@@ -372,14 +462,15 @@ useEffect(() => {
           maxResults={10}
           style={{ marginTop: 20 }}
           onOpen={() => {
-             fetchTeams();
+              fetchTeams();
               setSelectedTeam(null);  // clear selected team internally?
               setSelectedTeamLabel(""); // clear UI text
               setIsSelectOpen(true);
 
           }}
           onClose={() => setIsSelectOpen(false)}
-          onChange={async (teamId) => {
+          onChange={async (teamId) => {        
+      
             const teamObj = teams.find(t => t.$id === teamId);
             setSelectedTeam(teamId);
             setSelectedTeamLabel(teamObj?.Name || "");
@@ -388,6 +479,9 @@ useEffect(() => {
             const teamPlayers = await fetchTeamPlayers(teamId);
             setMatchPlayers(teamPlayers); 
             setIsActive(teamObj?.Active ?? false);
+            setNotes(teamObj?.Notes ?? "");
+
+            
           }}
         />
 
@@ -407,33 +501,62 @@ useEffect(() => {
                 <Text style={{ fontWeight: '600' }}>Club: </Text>{teamObj?.ClubName}
               </Text>
               {isAdmin && (
-              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                <Text style={{ fontSize: 18, marginRight: 10, color: colors.surface, fontWeight: "600" }}>
-                  Active:
-                </Text>
+                <>
+                  {/* Active row */}
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                    <Text style={{ fontSize: 18, marginRight: 10, color: colors.surface, fontWeight: "600" }}>
+                      Active:
+                    </Text>
 
-                <Switch
-                  value={isActive}
-                  onValueChange={toggleActiveStatus}
-                  trackColor={{ false: colors.border, true: colors.muted }}
-                  thumbColor={isActive ? colors.surface : colors.border}
-                />
+                    <Switch
+                      value={isActive}
+                      onValueChange={toggleActiveStatus}
+                      trackColor={{ false: colors.border, true: colors.muted }}
+                      thumbColor={isActive ? colors.surface : colors.border}
+                    />
 
-                <Text style={{ marginLeft: 10, fontSize: 16, color: colors.surface }}>
-                  {isActive ? "Active" : "Inactive"}
-                </Text>
-                <Text style={styles.label}>Details</Text>
-                  <TextInput
-                    value={eventBody}
-                    onChangeText={setEventBody}
-                    multiline
-                    placeholder="Add event details…"
-                    placeholderTextColor="#9CA3AF"
-                    style={styles.textarea}
-                  /> 
-              </View>
+                    <Text style={{ marginLeft: 10, fontSize: 16, color: colors.surface }}>
+                      {isActive ? "Active" : "Inactive"}
+                    </Text>
+                  </View>
 
-            )}
+                  {/* Details below */}
+                    <View style={{ marginTop: 8 }}>
+                      <Text style={styles.label}>Details</Text>
+
+                      <TextInput
+                        value={notes}
+                        onChangeText={(t) => {
+                          setNotes(t);
+                          setSaved(false); // optional: reset saved state when user edits
+                        }}
+                        multiline
+                        placeholder="Add event details…"
+                        placeholderTextColor="#9CA3AF"
+                        style={styles.textarea}
+                      />
+
+                      <View style={{ marginTop: 10 }}>
+                        <Pressable
+                          onPress={onSaveNotes}
+                          disabled={saving || !teamObj?.$id}
+                          style={[
+                            common.buttonNav,
+                            (saving || !teamObj?.$id) && { opacity: 0.5 },
+                          ]}
+                        >
+                          <Text style={{ fontSize: 18, color: colors.surface }}>
+                            {saving ? "Saving…" : saved ? "Saved ✓" : "Save details"}
+                          </Text>
+                        </Pressable>
+                      </View>
+
+                      {/* Optional tiny helper text */}
+                      {!!saveError && <Text style={styles.saveErrorText}>{saveError}</Text>}
+                    </View>
+                </>
+              )}
+
 
               <Text style={{ fontSize: 20, fontWeight: '600', marginTop: 20, marginBottom: 8, color: colors.surface }}>
                 Players
@@ -729,5 +852,69 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     zIndex: 9999,
   },
+  label: {
+    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.surface,
+  },
+  textarea: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 90,
+    color: colors.surface,
+    textAlignVertical: "top",
+  },
+  saveBtn: {
+  marginTop: 12,
+  paddingVertical: 12,
+  borderRadius: 12,
+  alignItems: "center",
+
+  backgroundColor: "#1D4ED8",       // strong blue button
+  borderWidth: 1,
+  borderColor: "rgba(147,197,253,0.35)",
+
+  shadowColor: "#000",
+  shadowOpacity: 0.25,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 4 },
+
+  // Android
+  elevation: 3,
+},
+saveBtnPressed: {
+  opacity: 0.9,
+  transform: [{ scale: 0.99 }],
+},
+saveBtnDisabled: {
+  opacity: 0.5,
+},
+saveBtnText: {
+  color: "#E5E7EB",
+  fontWeight: "700",
+  fontSize: 15,
+  letterSpacing: 0.2,
+},
+saveErrorText: {
+  marginTop: 8,
+  color: "#FCA5A5",
+  fontSize: 12,
+},
+saveBtnOverride: {
+  marginTop: 12,     // spacing under Details box
+},
+
+btnPressed: {
+  opacity: 0.9,
+  transform: [{ scale: 0.98 }],
+},
+
+btnDisabled: {
+  opacity: 0.5,
+},
+
 });
 

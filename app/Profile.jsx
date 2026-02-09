@@ -14,7 +14,7 @@ import {
 
 import { account, tablesDb } from "../lib/appwrite";
 import { useLocalSearchParams, router } from 'expo-router';
-import { Query } from "react-native-appwrite"; 
+import { Query } from "appwrite"; 
 import { common, colors } from './styles/common';
 import Layout from "./home_layout";
 

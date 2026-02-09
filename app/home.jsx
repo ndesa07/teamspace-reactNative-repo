@@ -1,19 +1,22 @@
 // app/home.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, ScrollView, StyleSheet, Button,TouchableWithoutFeedback,Keyboard } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Button,TouchableWithoutFeedback,Keyboard,Pressable } from "react-native";
 import Layout from "./home_layout";
 import { common,colors } from "./styles/common";
 import { account, tablesDb, ID,databases,functions } from "../lib/appwrite";
 import { MaterialIcons } from "@expo/vector-icons";
 import AnnouncementModal from "./Components/AnnouncementModal.jsx";
-import { Query } from "react-native-appwrite"; // or from your wrapper if re-exported
-import { Pressable } from "react-native";
+import { Query } from "appwrite"; // or from your wrapper if re-exported
 import AnnouncementDetailModal from "./Components/AnnouncementDetailModal";
 import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
 
 
+
+
 export default function Home() {
+  const appEnv = process.env.EXPO_PUBLIC_APP_ENV;
+
   const [role, setRole] = useState(null);
   const [clubName, setClubName] = useState(null);
   const [firstName, setFirstName] = useState(null);
@@ -38,47 +41,57 @@ export default function Home() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [updatingDetail, setUpdatingDetail] = useState(false);
 
+   
+const DB_ID = "68cfc3d00013a224d25f";
+const CRICKET_CLUB_COL_ID = "name"; // this is your collection id shown in the UI
+
 async function registerPushToken() {
   try {
-    // Request permission
+    // 1) Permissions
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {
       console.log("Notification permission not granted");
       return;
     }
 
-    // Get Expo push token
+    // 2) Expo push token
     const token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log("Expo push token:", token);
 
-    // Get logged-in Appwrite user
+    // 3) Logged-in Appwrite user
     const user = await account.get();
+    const userEmail = (user.email ?? "").toLowerCase().trim();
+    if (!userEmail) {
+      console.log("No email on Appwrite user, cannot link to CricketClub row");
+      return;
+    }
 
-    // Fetch user document from CricketClub
-    const userDoc = await databases.getDocument(
-      "68cfc3d00013a224d25f",
-      "name",
-      user.$id
-    );
+    // 4) Find the CricketClub row for this user by email
+    const res = await databases.listDocuments(DB_ID, CRICKET_CLUB_COL_ID, [
+      Query.equal("email", userEmail),
+      Query.limit(1),
+    ]);
 
-    // Merge tokens, avoid duplicates
-    const updatedTokens = Array.isArray(userDoc.expoPushTokens)
-      ? Array.from(new Set([...userDoc.expoPushTokens, token]))
-      : [token];
+    if (res.total === 0) {
+      console.log(
+        `No CricketClub row found for email=${userEmail}. Add the user to CricketClub table first.`
+      );
+      return;
+    }
 
-    // Save token back to Appwrite
-    await databases.updateDocument(
-      "68cfc3d00013a224d25f",
-      "name",
-      user.$id,
-      {
-        expoPushTokens: updatedTokens,
-      }
-    );
+    const userDoc = res.documents[0];
 
-    console.log("Push token saved successfully!");
+    // 5) Merge tokens, avoid duplicates
+    const existing = Array.isArray(userDoc.expoPushTokens) ? userDoc.expoPushTokens : [];
+    const updatedTokens = Array.from(new Set([...existing, token]));
+
+    // 6) Update the found document using its REAL doc id ($id)
+    await databases.updateDocument(DB_ID, CRICKET_CLUB_COL_ID, userDoc.$id, {
+      expoPushTokens: updatedTokens,
+    });
+
+    console.log("Push token registered:", token);
   } catch (err) {
-    console.log("Failed to register push token:", err);
+    console.log("Failed to register push token:", err?.message ?? err);
   }
 }
 
@@ -87,6 +100,7 @@ async function registerPushToken() {
     let alive = true;
     (async () => {
       try {
+        
         const user = await account.get();
         const row = await tablesDb.getRow("68cfc3d00013a224d25f", "name", user.$id); // ensure "name" is your collection ID
         if (!alive) return;
@@ -105,6 +119,7 @@ async function registerPushToken() {
   }, []);
   useEffect(() => {
   registerPushToken();
+  console.log("App environment:", appEnv);
 }, []);
 
   // 2) Function to (re)load announcements for current Club
@@ -142,6 +157,7 @@ async function registerPushToken() {
 
   // 3) Load announcements whenever clubName becomes available/changes
   useEffect(() => {
+
     loadAnnouncements();
   }, [loadAnnouncements]);
 
@@ -174,16 +190,17 @@ async function registerPushToken() {
           // only if attribute exists in schema
         }
       );
+
       {/* Send push notification via Appwrite Function  */}
         await functions.createExecution(
-        "69377c99003c23971ea3",  
+        process.env.EXPO_PUBLIC_PUSH_FUNCTION_ID_EC2,  
         JSON.stringify({
           type: "ANNOUNCEMENT",
           clubName: clubName,      
           announcementTitle: title, 
         })
       );
-
+      
       // Immediately refresh list
       await loadAnnouncements();
 
