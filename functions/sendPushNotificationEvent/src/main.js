@@ -1,9 +1,6 @@
-// src/main.js
-log("ENV APPWRITE_FUNCTION_API_ENDPOINT = " + process.env.APPWRITE_FUNCTION_API_ENDPOINT);
-log("ENV APPWRITE_FUNCTION_PROJECT_ID = " + process.env.APPWRITE_FUNCTION_PROJECT_ID);
-log("ENV DB_ID = " + process.env.DB_ID);
-log("ENV USERS_COLLECTION_ID = " + process.env.USERS_COLLECTION_ID);
 import { Client, Databases } from "node-appwrite";
+import axios from "axios";
+
 
 export default async ({ req, res, log, error }) => {
   // --- 1. Parse request body ---
@@ -160,13 +157,15 @@ export default async ({ req, res, log, error }) => {
     }));
 
     // --- 5. Send to Expo Push API (Node 22 has global fetch) ---
-    const expoResponse = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(messages),
-    });
-
-    const expoResult = await expoResponse.json();
+      const { data: expoResult } = await axios.post(
+      "https://exp.host/--/api/v2/push/send",
+      messages,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
     log("Expo push result: " + JSON.stringify(expoResult));
 
     return res.json(

@@ -54,6 +54,7 @@ export default function AnnouncementModal({
               placeholder="Write your announcement…"
               placeholderTextColor="#888"
               value={body}
+              maxLength={7000}
               onChangeText={setBody}
               multiline
             />
